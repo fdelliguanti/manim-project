@@ -126,7 +126,7 @@ class BallsIntoUrns(Scene):
             rf"$M=\min(X_1,X_2,X_3,X_4)$."
         ).scale(0.72).to_edge(UP)
 
-        self.play(Write(monte_carlo_text))
+        self.play(FadeIn(monte_carlo_text))
 
         # -------------------------
         # Run the Monte Carlo experiment
@@ -157,7 +157,7 @@ class BallsIntoUrns(Scene):
         x_max = m_max + 1
 
         axes = Axes(
-            x_range=[x_min, x_max, 5],
+            x_range=[x_min, x_max, (x_max - x_min) / 10],
             y_range=[0, y_max*1.1, y_max/5],
             x_length=10.5,
             y_length=4.0,
@@ -172,6 +172,9 @@ class BallsIntoUrns(Scene):
                     x_max + 1,
                     5,
                 ),
+                "decimal_number_config": {
+                    "num_decimal_places": 2,
+                },
             },
             y_axis_config={
                 "decimal_number_config": {
@@ -275,12 +278,14 @@ class BallsIntoUrns(Scene):
             FadeOut(bars),
             FadeOut(quantile_line),
             FadeOut(quantile_label),
+            FadeOut(summary),
+            FadeOut(monte_carlo_text)
         )
 
         transition_text = Tex(
             r"Now we observe the $5\%$ quantile of the simulated minima as a function of the number of balls $N$."
         ).scale(0.72).to_edge(UP)
-        self.play(Write(transition_text))
+        self.play(FadeIn(transition_text))
         self.wait(2)
 
         N_range = np.arange(1000, 20001, 1000)
@@ -291,93 +296,94 @@ class BallsIntoUrns(Scene):
             empirical_5_quantile = float(np.quantile(minima, 0.05))
             quantiles.append((_N, empirical_5_quantile))
 
-        # Observed support of the empirical distribution
-            q_min = int(quantiles[:, 1].min())
-            q_max = int(quantiles[:, 1].max())
-            q_values = np.arange(q_min, q_max + 1)
+        # Observed support of the emprical quantiles for each sample size
+        quantiles = np.array(quantiles)
+        q_min = int(quantiles[:, 1].min())
+        q_max = int(quantiles[:, 1].max())
+        q_values = np.arange(q_min, q_max + 1)
     
     
-            # Choose a convenient upper limit for the probability axis.
-            probability_max = float(probabilities.max())
-            y_max = np.max(probability_max)
-    
-            # Give the horizontal axis a little padding.
-            x_min = q_min - 1
-            x_max = q_max + 1
-    
-            axes = Axes(
-                x_range=[x_min, x_max, 5],
-                y_range=[0, y_max*1.1, y_max/5],
-                x_length=10.5,
-                y_length=4.0,
-                tips=False,
-                axis_config={
-                    "include_numbers": True,
-                    "font_size": 24,
+        # Choose a convenient upper limit for the probability axis.
+        q_values_max = float(q_values.max())
+        y_max = np.max(q_values_max)
+
+        # Give the horizontal axis a little padding.
+        x_min = N_range.min() - 1000
+        x_max = N_range.max() + 1000
+
+        axes = Axes(
+            x_range=[x_min, x_max, (x_max - x_min) / 10],
+            y_range=[0, y_max*1.1, y_max/5],
+            x_length=10.5,
+            y_length=4.0,
+            tips=False,
+            axis_config={
+                "include_numbers": True,
+                "font_size": 24,
+            },
+            x_axis_config={
+                "include_numbers": False,
+                "decimal_number_config": {
+                    "num_decimal_places": 2,
                 },
-                x_axis_config={
-                    "numbers_to_include": np.arange(
-                        5 * np.ceil(x_min / 5),
-                        x_max + 1,
-                        5,
-                    ),
+            },
+            y_axis_config={
+                "decimal_number_config": {
+                    "num_decimal_places": 2,
                 },
-                y_axis_config={
-                    "decimal_number_config": {
-                        "num_decimal_places": 2,
-                    },
-                },
-            ).shift(DOWN * 0.45)
-    
-            x_label = MathTex("k").scale(0.7)
-            x_label.next_to(axes.x_axis, RIGHT, buff=0.15)
-    
-            distribution_label = Tex(
-            "Distribution of empirical 5% quantiles of the simulated minima for $S={S}$ Monte Carlo simulations depending on the number of balls $N$"
-            ).scale(0.62)
-            distribution_label.next_to(axes, UP, buff=0.2).shift(0.5*UP)
-    
-            self.play(
-                Create(axes),
-                FadeIn(x_label),
-                FadeIn(distribution_label),
+            },
+        ).shift(DOWN * 0.45)
+
+        exact_x_values = quantiles[:, 0]
+        axes.add_coordinates(exact_x_values)
+        x_label = MathTex("k").scale(0.7)
+        x_label.next_to(axes.x_axis, RIGHT, buff=0.15)
+
+        distribution_label = Tex(
+        "Distribution of empirical 5% quantiles of the simulated minima for $S={S}$ Monte Carlo simulations depending on the number of balls $N$"
+        ).scale(0.62)
+        distribution_label.next_to(axes, UP, buff=0.2).shift(0.5*UP)
+
+        self.play(
+            Create(axes),
+            FadeIn(x_label),
+            FadeIn(distribution_label),
+        )
+
+        # -------------------------
+        # Construct the PMF bars
+        # -------------------------
+        bars = VGroup()
+
+        # Width of one x-axis unit in scene coordinates.
+        one_unit_width = np.linalg.norm(
+            axes.c2p(q_min + 1, 0) - axes.c2p(q_min, 0)
+        )
+        bar_width = 0.8 * one_unit_width
+
+        for (k,q) in quantiles:
+            if q == 0:
+                continue
+
+            bottom = axes.c2p(k, 0)
+            top = axes.c2p(k, q)
+            bar_height = np.linalg.norm(top - bottom)
+
+            bar = Rectangle(
+                width=bar_width,
+                height=bar_height,
+                stroke_width=1.5,
+                fill_opacity=0.75,
             )
-    
-            # -------------------------
-            # Construct the PMF bars
-            # -------------------------
-            bars = VGroup()
-    
-            # Width of one x-axis unit in scene coordinates.
-            one_unit_width = np.linalg.norm(
-                axes.c2p(m_min + 1, 0) - axes.c2p(m_min, 0)
-            )
-            bar_width = 0.8 * one_unit_width
-    
-            for q, probability in zip(q_values, probabilities):
-                if probability == 0:
-                    continue
-    
-                bottom = axes.c2p(m, 0)
-                top = axes.c2p(m, probability)
-                bar_height = np.linalg.norm(top - bottom)
-    
-                bar = Rectangle(
-                    width=bar_width,
-                    height=bar_height,
-                    stroke_width=1.5,
-                    fill_opacity=0.75,
-                )
-    
-                # Rectangle positioning uses its center.
-                bar.move_to((bottom + top) / 2)
-                bars.add(bar)
-    
-            self.play(
-                LaggedStart(
-                    *[GrowFromEdge(bar, DOWN) for bar in bars],
-                    lag_ratio=0.025,
-                ),
-                run_time=3,
-            )
-    
+
+            # Rectangle positioning uses its center.
+            bar.move_to((bottom + top) / 2)
+            bars.add(bar)
+
+        self.play(
+            LaggedStart(
+                *[GrowFromEdge(bar, DOWN) for bar in bars],
+                lag_ratio=0.025,
+            ),
+            run_time=3,
+        )

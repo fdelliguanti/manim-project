@@ -2,6 +2,26 @@ from manim import *
 import numpy as np
 
 
+from manim import *
+
+class RotatedSurface(ThreeDScene):
+    def construct(self):
+        axes = ThreeDAxes()
+        sphere = Surface(
+            lambda u, v: np.array([
+                1.5 * np.cos(u) * np.cos(v),
+                1.5 * np.cos(u) * np.sin(v),
+                1.5 * np.sin(u)
+            ]), v_range=[0, TAU], u_range=[-PI / 2, PI / 2],
+            checkerboard_colors=[RED_D, RED_E], resolution=(4, 8)
+        )
+        self.renderer.camera.light_source.move_to(3*IN) # changes the source of the light
+        self.set_camera_orientation(phi=75 * DEGREES, theta=30 * DEGREES)
+        self.add(axes, sphere)
+        
+        intro_text = Tex(r"Imagine you want to study climate effects on earth").scale(0.75).to_edge(UP)
+        self.play(Rotate(sphere, angle=TAU, axis=OUT), run_time=10, rate_func=linear)
+        
 class BallsIntoUrns(Scene):
     def ball_position_in_urn(self, urn, k):
         """
@@ -157,24 +177,25 @@ class BallsIntoUrns(Scene):
         x_max = m_max + 1
 
         axes = Axes(
-            x_range=[x_min, x_max, (x_max - x_min) / 10],
+            x_range=[x_min,x_max, (x_max - x_min) / 5],
             y_range=[0, y_max*1.1, y_max/5],
             x_length=10.5,
             y_length=4.0,
             tips=False,
             axis_config={
-                "include_numbers": True,
+                "include_numbers": False,
                 "font_size": 24,
             },
             x_axis_config={
+                "include_numbers": True,
                 "numbers_to_include": np.arange(
                     5 * np.ceil(x_min / 5),
                     x_max + 1,
-                    5,
+                    np.ceil((x_max - x_min) / 5),
                 ),
                 "decimal_number_config": {
-                    "num_decimal_places": 2,
-                },
+                    "num_decimal_places": 0,
+                }
             },
             y_axis_config={
                 "decimal_number_config": {
@@ -183,6 +204,10 @@ class BallsIntoUrns(Scene):
             },
         ).shift(DOWN * 0.45)
 
+        for mobs in axes.x_axis.numbers:
+            mobs.rotate(45/180 * PI)
+            
+        self.add(axes)
         x_label = MathTex("k").scale(0.7)
         x_label.next_to(axes.x_axis, RIGHT, buff=0.15)
 
@@ -311,20 +336,22 @@ class BallsIntoUrns(Scene):
         x_min = N_range.min() - 1000
         x_max = N_range.max() + 1000
 
+        
         axes = Axes(
-            x_range=[x_min, x_max, (x_max - x_min) / 10],
-            y_range=[0, y_max*1.1, y_max/5],
+            x_range=[x_min, x_max, (x_max - x_min) / 4],
+            y_range=[0, y_max * 1.1, y_max / 5],
             x_length=10.5,
             y_length=4.0,
             tips=False,
             axis_config={
-                "include_numbers": True,
+                "include_numbers": False,
                 "font_size": 24,
             },
             x_axis_config={
-                "include_numbers": False,
+                "include_numbers": True,
+                "numbers_to_include": np.linspace(x_min, x_max, 5),
                 "decimal_number_config": {
-                    "num_decimal_places": 2,
+                    "num_decimal_places": 0,
                 },
             },
             y_axis_config={
@@ -334,8 +361,11 @@ class BallsIntoUrns(Scene):
             },
         ).shift(DOWN * 0.45)
 
-        exact_x_values = quantiles[:, 0]
-        axes.add_coordinates(exact_x_values)
+        for mob in axes.x_axis.numbers:
+            mob.rotate(PI / 4)
+
+        self.add(axes)
+        
         x_label = MathTex("k").scale(0.7)
         x_label.next_to(axes.x_axis, RIGHT, buff=0.15)
 

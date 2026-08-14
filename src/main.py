@@ -3,25 +3,58 @@ import numpy as np
 
 
 from manim import *
+class Intro(Scene):
+    def construct(self):
+        title = Tex(r"Imagine you want to study climate effects on earth").scale(0.75).to_edge(UP)
+        self.play(Write(title))
+        self.wait(2)
+        texts = []
+        texts.append(Tex(r"One way to do this is to simulate the climate effects on a model of the earth.").scale(0.75).next_to(title, DOWN, buff=0.2))
+        texts.append(Tex(r"You could for example simulate whether the industrialisation had effects onto the climate by comparing pre-industrialisation and post-industrialisation scenarios.").scale(0.75).next_to(texts[-1], DOWN, buff=0.2))
+        texts.append(Tex(r"One could this by just comparing the effects within a regions.").scale(0.75).next_to(texts[-1], DOWN, buff=0.2))
+        texts.append(Tex(r"However, this would not be a good idea since the climate is a global phenomenon and the effects of industrialisation are not limited to one region.").scale(0.75).next_to(texts[-1], DOWN, buff=0.2))
+        texts.append(Tex(r"Instead, one could simulate the climate effects on a model of the earth and compare the effects of industrialisation on the global climate.").scale(0.75).next_to(texts[-1], DOWN, buff=0.2))
+        texts.append(Tex(r"But there is not the 'global wheter station' that measures the global climate.").scale(0.75).next_to(texts[-1], DOWN, buff=0.2))
+        texts.append(Tex(r"Instead, we have to rely on the measurements of many local weather stations, which can be viewed as proxies for their regions and combine them to get a global picture.").scale(0.75).next_to(texts[-1], DOWN, buff=0.2))
+        for text in texts:
+            self.play(Write(text))
+            self.wait(2)
 
 class RotatedSurface(ThreeDScene):
     def construct(self):
-        axes = ThreeDAxes()
-        sphere = Surface(
-            lambda u, v: np.array([
-                1.5 * np.cos(u) * np.cos(v),
-                1.5 * np.cos(u) * np.sin(v),
-                1.5 * np.sin(u)
-            ]), v_range=[0, TAU], u_range=[-PI / 2, PI / 2],
-            checkerboard_colors=[RED_D, RED_E], resolution=(4, 8)
-        )
+        #axes = ThreeDAxes()
         self.renderer.camera.light_source.move_to(3*IN) # changes the source of the light
         self.set_camera_orientation(phi=75 * DEGREES, theta=30 * DEGREES)
-        self.add(axes, sphere)
+        intro_text = Tex(r"Imagine you want to study climate effects on earth").scale(0.75)
+        self.add_fixed_in_frame_mobjects(intro_text)
+        intro_text.to_edge(UP, buff=0.5)
+        self.play(Write(intro_text))
+        sphere = Sphere(radius=1.5, resolution=(20, 20)).next_to(intro_text, DOWN, buff=0.5)
+        self.add(sphere)
         
-        intro_text = Tex(r"Imagine you want to study climate effects on earth").scale(0.75).to_edge(UP)
         self.play(Rotate(sphere, angle=TAU, axis=OUT), run_time=10, rate_func=linear)
         
+class Means(Scene):
+    def construct(self):
+        title = Tex(r"Imagine you have the temperature data of 4 regions").scale(0.75).to_edge(UP)
+        
+        random_data_1 = np.random.standard_normal(8)
+        random_data_2 = np.random.standard_normal(8)
+        vec_1 = Matrix([[round(k, 2)] for k in random_data_1]).next_to(title, DOWN, buff=0.5)
+        vec_2 = Matrix([[round(k, 2)] for k in random_data_2]).next_to(vec_1, RIGHT, buff=1)
+        
+        self.play(Write(title),Write(vec_1), Write(vec_2))
+        self.wait(2)
+        
+        self.play(vec_1.animate.scale(0.5), vec_2.animate.scale(0.5))
+        x_1_label = Tex(r"$X_1=$").scale(0.75).next_to(vec_1, LEFT, buff=0.5)
+        x_2_label = Tex(r"$X_2=$").scale(0.75).next_to(vec_2, LEFT, buff=0.5)
+        self.play(Write(x_1_label), Write(x_2_label))
+        mean_1 = Tex(rf"$\overline{{X}}_1$={round(np.mean(random_data_1), 2)}").scale(0.75).next_to(vec_1, DOWN, buff=0.5)
+        mean_2 = Tex(rf"$\overline{{X}}_2$={round(np.mean(random_data_2), 2)}").scale(0.75).next_to(vec_2, DOWN, buff=0.5)
+        self.play(Write(mean_1), Write(mean_2))
+        self.wait(2)
+
 class BallsIntoUrns(Scene):
     def ball_position_in_urn(self, urn, k):
         """

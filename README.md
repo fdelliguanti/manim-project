@@ -1,3 +1,3 @@
-In this repository, I share my current manim-project. My aim is to visualize the result that on a set S (measurable) equipped with a finite partition (of measurable sets) and iid samples X_1, ... X_N which are just known to land into S, there is a common least number of samples landing across the cells, which holds with high probability.
+In this repository, I share my current manim-project. My aim is to visualize the result that on a set S (measurable) equipped with a finite partition (of measurable sets) and iid samples $X_1, ... X_N$ which are just known to land into S, there is a common least number of samples landing across the cells, which holds with high probability.
 
 Motivated is this example by the study of global climate change on the earth. The global climate change can be boiled down to a change point detection by comparing locally the climate change before and after some fixed time point for each region (for some prefixed partition of the earth).

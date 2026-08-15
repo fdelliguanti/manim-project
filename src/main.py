@@ -3,12 +3,59 @@ import numpy as np
 
 
 from manim import *
+
+def vec_to_tex_str(vec = [1,2,3], name="X", num_decimal = 2):
+    """
+    Convert a matrix to a LaTeX matrix representation.
+    """
+    str_to_tex = ""
+    len_vec = len(vec)
+    for k, e in enumerate(vec):
+        if k < len_vec - 1:
+            str_to_tex += f"{round(e, num_decimal)} \\\\"
+        elif k == len_vec - 1:
+            str_to_tex += f"{round(e,num_decimal)}"
+            
+    return f"{name} = \\begin{{pmatrix}} " + str_to_tex + "\\end{pmatrix}"
+    
+class Means(VGroup):
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        #self.title = Tex(r"Imagine you have the temperature data of 4 regions").scale(0.75).to_edge(UP)
+                
+        self.random_data_1 = np.random.standard_normal(8)
+        self.random_data_2 = np.random.standard_normal(8)
+        #self.vec_1 = Matrix([[round(k, 2)] for k in self.random_data_1]).scale(0.75).to_edge(UP, buff=2)
+        #self.vec_2 = Matrix([[round(k, 2)] for k in self.random_data_2]).scale(0.75).next_to(self.vec_1, RIGHT, buff=1)
+        self.vec_1 = [round(k, 2) for k in self.random_data_1]
+        self.vec_2 = [round(k, 2) for k in self.random_data_2]
+        
+        self.x_1_label = Tex(rf"${vec_to_tex_str(self.vec_1, "X_1")} $").scale(0.75).to_edge(UP, buff=2)
+        self.x_2_label = Tex(rf"${vec_to_tex_str(self.vec_2, "X_2")} $").scale(0.75).next_to(self.x_1_label, RIGHT, buff=0.5)
+        
+        self.mean_1 = Tex(rf"$\overline{{X}}_1$={round(np.mean(self.random_data_1), 2)}").scale(0.75).next_to(self.x_1_label, DOWN, buff=0.5)
+        self.mean_2 = Tex(rf"$\overline{{X}}_2$={round(np.mean(self.random_data_2), 2)}").scale(0.75).next_to(self.x_2_label, DOWN, buff=0.5)
+        
+        self.gr = VGroup(self.x_1_label,self.x_2_label, self.mean_1, self.mean_2)
+        
+        self.add(self.gr)
+        
+    def animate_to_corner(self):
+        return self.gr.animate.scale(0.5).to_corner(DR)
+
+        
 class Intro(Scene):
     def construct(self):
-        title = Tex(r"Imagine you want to study climate effects on earth").scale(0.75).to_edge(UP)
+        title = Tex(r"Imagine you want to study climate change on earth").scale(0.75).to_edge(UP)
         self.play(Write(title))
+        means = Means().next_to(title, DOWN, buff = 0.5)
+        self.play(Write(means))
+        self.wait(2)
+        self.play(means.animate_to_corner())
         self.wait(2)
         texts = []
+        
         texts.append(Tex(r"One way to do this is to simulate the climate effects on a model of the earth.").scale(0.75).next_to(title, DOWN, buff=0.2))
         texts.append(Tex(r"You could for example simulate whether the industrialisation had effects onto the climate by comparing pre-industrialisation and post-industrialisation scenarios.").scale(0.75).next_to(texts[-1], DOWN, buff=0.2))
         texts.append(Tex(r"One could this by just comparing the effects within a regions.").scale(0.75).next_to(texts[-1], DOWN, buff=0.2))
@@ -34,26 +81,7 @@ class RotatedSurface(ThreeDScene):
         
         self.play(Rotate(sphere, angle=TAU, axis=OUT), run_time=10, rate_func=linear)
         
-class Means(Scene):
-    def construct(self):
-        title = Tex(r"Imagine you have the temperature data of 4 regions").scale(0.75).to_edge(UP)
-        
-        random_data_1 = np.random.standard_normal(8)
-        random_data_2 = np.random.standard_normal(8)
-        vec_1 = Matrix([[round(k, 2)] for k in random_data_1]).next_to(title, DOWN, buff=0.5)
-        vec_2 = Matrix([[round(k, 2)] for k in random_data_2]).next_to(vec_1, RIGHT, buff=1)
-        
-        self.play(Write(title),Write(vec_1), Write(vec_2))
-        self.wait(2)
-        
-        self.play(vec_1.animate.scale(0.5), vec_2.animate.scale(0.5))
-        x_1_label = Tex(r"$X_1=$").scale(0.75).next_to(vec_1, LEFT, buff=0.5)
-        x_2_label = Tex(r"$X_2=$").scale(0.75).next_to(vec_2, LEFT, buff=0.5)
-        self.play(Write(x_1_label), Write(x_2_label))
-        mean_1 = Tex(rf"$\overline{{X}}_1$={round(np.mean(random_data_1), 2)}").scale(0.75).next_to(vec_1, DOWN, buff=0.5)
-        mean_2 = Tex(rf"$\overline{{X}}_2$={round(np.mean(random_data_2), 2)}").scale(0.75).next_to(vec_2, DOWN, buff=0.5)
-        self.play(Write(mean_1), Write(mean_2))
-        self.wait(2)
+
 
 class BallsIntoUrns(Scene):
     def ball_position_in_urn(self, urn, k):

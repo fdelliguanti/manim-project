@@ -45,15 +45,34 @@ class Means(VGroup):
         return self.gr.animate.scale(0.5).to_corner(DR)
 
         
-class Intro(Scene):
+class Intro(ThreeDScene):
     def construct(self):
+        self.renderer.camera.light_source.move_to(3*IN) # changes the source of the light
+        self.set_camera_orientation(phi=75 * DEGREES, theta=30 * DEGREES)
         title = Tex(r"Imagine you want to study climate change on earth").scale(0.75).to_edge(UP)
+        self.add_fixed_in_frame_mobjects(title)
         self.play(Write(title))
-        means = Means().next_to(title, DOWN, buff = 0.5)
+        text_before_means = []
+        text_before_means.append(Tex(r"Nowadays, the global average temperature is used as indicator for the climate change.").scale(0.75).next_to(title, DOWN, buff = 0.5))
+        text_before_means.append(Tex(r"But what does it mean? How to assign a planet one number that should represent somehow its temperature?").scale(0.75).next_to(text_before_means[-1],DOWN, buff = 0.2))
+        text_before_means.append(Tex(r"The definition of 'global average temperature' can vary. One example is the gloabel surface temperature (GST) which is computed as the average of the temperature at the surface layer of the ocean and over land (Wikipedia).").scale(0.75).next_to(text_before_means[-1],DOWN, buff = 0.2))
+        
+        for text in text_before_means:
+            self.add_fixed_in_frame_mobjects(text)
+            self.play(Write(text))
+            self.wait(2)
+            
+        sphere = RotatedSphere().next_to(text_before_means[-1], DOWN, buff=0.5)
+        self.add(sphere)
+        self.play(Create(sphere))
+        self.play(sphere.rotate_sphere())
+        means = Means().next_to(text_before_means[-1], DOWN, buff = 0.5)
+        self.add_fixed_in_frame_mobjects(means)
         self.play(Write(means))
         self.wait(2)
         self.play(means.animate_to_corner())
         self.wait(2)
+        """
         texts = []
         
         texts.append(Tex(r"One way to do this is to simulate the climate effects on a model of the earth.").scale(0.75).next_to(title, DOWN, buff=0.2))
@@ -66,22 +85,318 @@ class Intro(Scene):
         for text in texts:
             self.play(Write(text))
             self.wait(2)
+        """
+        
+from manim import *
+import numpy as np
 
-class RotatedSurface(ThreeDScene):
+
+from manim import *
+
+import numpy as np
+from pathlib import Path
+from urllib.request import Request, urlopen
+from PIL import Image
+
+
+class RotatingEarth(ThreeDScene):
+
+    EARTH_URL = (
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/"
+        "Whole_world_-_land_and_oceans.jpg/"
+        "1280px-Whole_world_-_land_and_oceans.jpg"
+    )
+
+    EARTH_FILE = Path("assets") / "earth.jpg"
+
+    # Globe settings
+    RADIUS = 3.0
+
+    # Number of texture patches.
+    #
+    # Higher values -> better image quality, slower rendering.
+    LATITUDE_PATCHES = 100
+    LONGITUDE_PATCHES = 100
+
+    # Mesh spacing, in degrees
+    LATITUDE_STEP = 15
+    LONGITUDE_STEP = 15
+
+    # ------------------------------------------------------------
+    # Download Earth image
+    # ------------------------------------------------------------
+
+    @classmethod
+    def download_earth_texture(cls):
+        cls.EARTH_FILE.parent.mkdir(parents=True, exist_ok=True)
+
+        if cls.EARTH_FILE.exists():
+            print(f"Using cached Earth texture: {cls.EARTH_FILE}")
+            return cls.EARTH_FILE
+
+        print("Downloading Earth texture...")
+
+        # Wikimedia can reject requests without a User-Agent.
+        request = Request(
+            cls.EARTH_URL,
+            headers={
+                "User-Agent": (
+                    "Mozilla/5.0 ManimCE RotatingEarth example"
+                )
+            },
+        )
+
+        with urlopen(request) as response:
+            image_data = response.read()
+
+        cls.EARTH_FILE.write_bytes(image_data)
+
+        print(f"Saved Earth texture to: {cls.EARTH_FILE}")
+
+        return cls.EARTH_FILE
+
+    # ------------------------------------------------------------
+    # Spherical coordinates
+    # ------------------------------------------------------------
+
+    @staticmethod
+    def sphere_point(theta, phi, radius):
+        """
+        theta:
+            longitude angle, 0 ... 2π
+
+        phi:
+            polar angle, 0 ... π
+
+            0   = north pole
+            π/2 = equator
+            π   = south pole
+        """
+
+        return radius * np.array(
+            [
+                np.sin(phi) * np.cos(theta),
+                np.sin(phi) * np.sin(theta),
+                np.cos(phi),
+            ]
+        )
+
+    # ------------------------------------------------------------
+    # Build textured sphere
+    # ------------------------------------------------------------
+
+    def create_textured_earth(self, image_path):
+        image = Image.open(image_path).convert("RGB")
+
+        image_width, image_height = image.size
+
+        earth = VGroup()
+
+        n_lat = self.LATITUDE_PATCHES
+        n_lon = self.LONGITUDE_PATCHES
+
+        for i in range(n_lat):
+            # Polar coordinate limits
+            phi_1 = PI * i / n_lat
+            phi_2 = PI * (i + 1) / n_lat
+
+            # Sample at center of patch
+            phi_center = (phi_1 + phi_2) / 2
+
+            # Convert latitude position to image Y coordinate.
+            image_y = int(
+                (phi_center / PI) * (image_height - 1)
+            )
+
+            for j in range(n_lon):
+
+                theta_1 = TAU * j / n_lon
+                theta_2 = TAU * (j + 1) / n_lon
+
+                theta_center = (theta_1 + theta_2) / 2
+
+                # ------------------------------------------------
+                # Texture-coordinate correction
+                #
+                # Depending on the map, you may want to add PI
+                # here to rotate the continents around the globe.
+                # ------------------------------------------------
+
+                texture_theta = theta_center + PI
+
+                texture_theta %= TAU
+
+                image_x = int(
+                    (texture_theta / TAU)
+                    * (image_width - 1)
+                )
+
+                r, g, b = image.getpixel((image_x, image_y))
+
+                patch_color = ManimColor.from_rgb(
+                    (
+                        r / 255,
+                        g / 255,
+                        b / 255,
+                    )
+                )
+
+                # Each Surface represents one small patch
+                # of the Earth texture.
+                patch = Surface(
+                    lambda u, v: self.sphere_point(
+                        u,
+                        v,
+                        self.RADIUS,
+                    ),
+                    u_range=[theta_1, theta_2],
+                    v_range=[phi_1, phi_2],
+                    resolution=(1, 1),
+                    fill_color=patch_color,
+                    checkerboard_colors=False,
+                    fill_opacity=1,
+                    stroke_width=0,
+                )
+
+                earth.add(patch)
+
+        return earth
+
+    # ------------------------------------------------------------
+    # Latitude / longitude mesh
+    # ------------------------------------------------------------
+
+    def create_earth_mesh(self):
+        mesh = VGroup()
+
+        radius = self.RADIUS * 1.002
+
+        # --------------------------------------------------------
+        # Latitude lines
+        # --------------------------------------------------------
+
+        for latitude in range(
+            -75,
+            90,
+            self.LATITUDE_STEP,
+        ):
+            lat = latitude * DEGREES
+
+            # Convert latitude to polar angle.
+            phi = PI / 2 - lat
+
+            latitude_line = ParametricFunction(
+                lambda theta, phi=phi: self.sphere_point(
+                    theta,
+                    phi,
+                    radius,
+                ),
+                t_range=[0, TAU],
+                color=WHITE,
+                stroke_width=0.7,
+            )
+
+            latitude_line.set_opacity(0.35)
+
+            mesh.add(latitude_line)
+
+        # --------------------------------------------------------
+        # Longitude lines
+        # --------------------------------------------------------
+
+        for longitude in range(
+            0,
+            360,
+            self.LONGITUDE_STEP,
+        ):
+            theta = longitude * DEGREES
+
+            longitude_line = ParametricFunction(
+                lambda phi, theta=theta: self.sphere_point(
+                    theta,
+                    phi,
+                    radius,
+                ),
+                t_range=[0, PI],
+                color=WHITE,
+                stroke_width=0.7,
+            )
+
+            longitude_line.set_opacity(0.35)
+
+            mesh.add(longitude_line)
+
+        return mesh
+
+    # ------------------------------------------------------------
+    # Scene
+    # ------------------------------------------------------------
+
     def construct(self):
-        #axes = ThreeDAxes()
-        self.renderer.camera.light_source.move_to(3*IN) # changes the source of the light
-        self.set_camera_orientation(phi=75 * DEGREES, theta=30 * DEGREES)
-        intro_text = Tex(r"Imagine you want to study climate effects on earth").scale(0.75)
-        self.add_fixed_in_frame_mobjects(intro_text)
-        intro_text.to_edge(UP, buff=0.5)
-        self.play(Write(intro_text))
-        sphere = Sphere(radius=1.5, resolution=(20, 20)).next_to(intro_text, DOWN, buff=0.5)
-        self.add(sphere)
-        
-        self.play(Rotate(sphere, angle=TAU, axis=OUT), run_time=10, rate_func=linear)
-        
 
+        # --------------------------------------------------------
+        # Get texture
+        # --------------------------------------------------------
+
+        texture_file = self.download_earth_texture()
+
+        # --------------------------------------------------------
+        # Camera
+        # --------------------------------------------------------
+
+        self.set_camera_orientation(
+            phi=70 * DEGREES,
+            theta=-30 * DEGREES,
+            zoom=0.8,
+        )
+
+        # --------------------------------------------------------
+        # Earth
+        # --------------------------------------------------------
+
+        earth = self.create_textured_earth(texture_file)
+
+        #mesh = self.create_earth_mesh()
+
+        globe = VGroup(
+            earth,
+            #mesh,
+        )
+
+        # Slight tilt of Earth's rotation axis.
+        globe.rotate(
+            23.5 * DEGREES,
+            axis=RIGHT,
+        )
+
+        # --------------------------------------------------------
+        # Appearance
+        # --------------------------------------------------------
+
+        self.play(
+            FadeIn(earth),
+            #Create(mesh),
+            run_time=2,
+        )
+
+        self.wait(0.5)
+
+        # --------------------------------------------------------
+        # Rotate Earth
+        # --------------------------------------------------------
+
+        self.play(
+            Rotate(
+                globe,
+                angle=TAU,
+                axis=OUT,
+                about_point=ORIGIN,
+                rate_func=linear,
+            ),
+            run_time=12,
+        )
+
+        self.wait()
 
 class BallsIntoUrns(Scene):
     def ball_position_in_urn(self, urn, k):

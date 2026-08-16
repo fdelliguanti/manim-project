@@ -100,7 +100,7 @@ from PIL import Image
 
 
 class RotatingEarth(ThreeDScene):
-
+    PRECISION = 0.1
     EARTH_URL = (
         "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/"
         "Whole_world_-_land_and_oceans.jpg/"
@@ -115,8 +115,8 @@ class RotatingEarth(ThreeDScene):
     # Number of texture patches.
     #
     # Higher values -> better image quality, slower rendering.
-    LATITUDE_PATCHES = 100
-    LONGITUDE_PATCHES = 100
+    LATITUDE_PATCHES = int(PRECISION * 100)
+    LONGITUDE_PATCHES = int(PRECISION * 100)
 
     # Mesh spacing, in degrees
     LATITUDE_STEP = 15
@@ -337,7 +337,7 @@ class RotatingEarth(ThreeDScene):
         # --------------------------------------------------------
         # Get texture
         # --------------------------------------------------------
-
+      
         texture_file = self.download_earth_texture()
 
         # --------------------------------------------------------
@@ -364,11 +364,12 @@ class RotatingEarth(ThreeDScene):
         )
 
         # Slight tilt of Earth's rotation axis.
+        
         globe.rotate(
             23.5 * DEGREES,
             axis=RIGHT,
         )
-
+        
         # --------------------------------------------------------
         # Appearance
         # --------------------------------------------------------
@@ -389,8 +390,8 @@ class RotatingEarth(ThreeDScene):
             Rotate(
                 globe,
                 angle=TAU,
-                axis=OUT,
-                about_point=ORIGIN,
+                axis=np.cos(23.5*DEGREES)*OUT-np.sin(23.5*DEGREES)*UP,
+                #about_point=ORIGIN,
                 rate_func=linear,
             ),
             run_time=12,

@@ -373,31 +373,53 @@ class RotatingEarth(ThreeDScene):
         # --------------------------------------------------------
         # Appearance
         # --------------------------------------------------------
-
+        title = Tex(r"Imagine you want to study climate change on earth").scale(0.75).to_edge(UP)
+        self.add_fixed_in_frame_mobjects(title)
+        self.play(Write(title))
+        text_before_means = []
+        text_before_means.append(Tex(r"Nowadays, the global average temperature is used as indicator for the climate change.").scale(0.75).next_to(title, DOWN, buff = 0.5))
+        text_before_means.append(Tex(r"But what does it mean? How to assign a planet one number that should represent somehow its temperature?").scale(0.75).next_to(text_before_means[-1],DOWN, buff = 0.2))
+        text_before_means.append(Tex(r"The definition of 'global average temperature' can vary. One example is the gloabel surface temperature (GST) which is computed as the average of the temperature at the surface layer of the ocean and over land (Wikipedia).").scale(0.75).next_to(text_before_means[-1],DOWN, buff = 0.2))
         self.play(
-            FadeIn(earth),
-            #Create(mesh),
-            run_time=2,
-        )
-
+                    FadeIn(earth),
+                    #Create(mesh),
+                    run_time=2,
+                )
+        
         self.wait(0.5)
 
         # --------------------------------------------------------
         # Rotate Earth
         # --------------------------------------------------------
 
-        self.play(
-            Rotate(
-                globe,
-                angle=TAU,
-                axis=np.cos(23.5*DEGREES)*OUT-np.sin(23.5*DEGREES)*UP,
-                #about_point=ORIGIN,
-                rate_func=linear,
-            ),
-            run_time=12,
-        )
+        self.add_fixed_in_frame_mobjects(*text_before_means)
+        # Screen-space location where you want the globe
+        screen_target = 4.5 * RIGHT + 2.3 * DOWN
+        
+        # Convert screen-space direction to 3D world-space direction
+        R = self.camera.get_rotation_matrix()
+        world_target = np.dot(screen_target, R)
 
-        self.wait()
+        globe.add_updater(lambda m,dt : m.rotate(angle = np.pi*dt, axis = np.cos(23.5*DEGREES)*OUT - np.sin(23.5*DEGREES)*UP))
+        self.play(
+            LaggedStart(
+                *[Write(text) for text in text_before_means],
+                lag_ratio=1
+            ),
+
+            
+            Succession(
+                Wait(2),
+                
+                globe.animate(run_time = 4).scale(0.5).rotate(angle=TAU, axis = R @ OUT).move_to(world_target)
+            ),
+
+            run_time=14
+        )
+        globe.clear_updaters()
+        self.wait(2)
+                           
+
 
 class BallsIntoUrns(Scene):
     def ball_position_in_urn(self, urn, k):

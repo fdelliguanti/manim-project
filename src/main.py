@@ -373,13 +373,13 @@ class RotatingEarth(ThreeDScene):
         # --------------------------------------------------------
         # Appearance
         # --------------------------------------------------------
-        title = Tex(r"Imagine you want to study climate change on earth").scale(0.75).to_edge(UP)
+        title = Tex(r"Imagine your aim it to study climate on earth. E.g. for the climate change").scale(0.75).to_edge(UP)
         self.add_fixed_in_frame_mobjects(title)
         self.play(Write(title))
         text_before_means = []
-        text_before_means.append(Tex(r"Nowadays, the global average temperature is used as indicator for the climate change.").scale(0.75).next_to(title, DOWN, buff = 0.5))
-        text_before_means.append(Tex(r"But what does it mean? How to assign a planet one number that should represent somehow its temperature?").scale(0.75).next_to(text_before_means[-1],DOWN, buff = 0.2))
-        text_before_means.append(Tex(r"The definition of 'global average temperature' can vary. One example is the gloabel surface temperature (GST) which is computed as the average of the temperature at the surface layer of the ocean and over land (Wikipedia).").scale(0.75).next_to(text_before_means[-1],DOWN, buff = 0.2))
+        text_before_means.append(Tex(r"Quantities like temperature, pressure and humidity are not only measured by fixed placed weather stations. But moving devices like wether balloons, air crafts and ships collect also data.").scale(0.75).next_to(title, DOWN, buff = 0.5))
+        text_before_means.append(Tex(r"Problem: In a time window, e.g. one month, moving devices do not necessarily cover in a every regions of the earth uniformly.").scale(0.75).next_to(text_before_means[-1],DOWN, buff = 0.2))
+        text_before_means.append(Tex(r"Consequence: In order to reconstruct the global climate you need a coverage in a every region world-wide.").scale(0.75).next_to(text_before_means[-1],DOWN, buff = 0.2))
         self.play(
                     FadeIn(earth),
                     #Create(mesh),
@@ -402,12 +402,13 @@ class RotatingEarth(ThreeDScene):
 
         globe.add_updater(lambda m,dt : m.rotate(angle = np.pi*dt, axis = np.cos(23.5*DEGREES)*OUT - np.sin(23.5*DEGREES)*UP))
         self.play(
-            LaggedStart(
-                *[Write(text) for text in text_before_means],
-                lag_ratio=1
-            ),
-
-            
+            Succession(
+                LaggedStart(
+                    *[Write(text) for text in text_before_means],
+                    lag_ratio=1
+                ),
+                Wait(2)               
+            ),            
             Succession(
                 Wait(2),
                 
@@ -418,6 +419,7 @@ class RotatingEarth(ThreeDScene):
         )
         globe.clear_updaters()
         self.wait(2)
+        self.play(FadeOut(*text_before_means), FadeOut(globe))
                            
 
 

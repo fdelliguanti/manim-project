@@ -1,4 +1,5 @@
 from manim import *
+from manim.camera.three_d_camera import ThreeDCamera
 import numpy as np
 
 
@@ -411,17 +412,187 @@ class RotatingEarth(ThreeDScene):
             ),            
             Succession(
                 Wait(2),
-                
-                globe.animate(run_time = 4).scale(0.5).rotate(angle=TAU, axis = R @ OUT).move_to(world_target)
+                globe.animate(run_time = 4).scale(0.5).move_to(world_target)
             ),
 
             run_time=14
         )
         globe.clear_updaters()
         self.wait(2)
-        self.play(FadeOut(*text_before_means), FadeOut(globe))
-                           
+        R = self.camera.get_rotation_matrix()
+        
+        screen_target = 4*LEFT
+        world_target = np.dot(screen_target,R)
+        self.play(Succession(
+            FadeOut(*text_before_means),
+            globe.animate(run_time = 4).scale(1.75).move_to(world_target)
+            ))
+        
+        arrow_to_the_right = Arrow3D(start = LEFT @ R, end = RIGHT @ R)
+        self.play(FadeIn(arrow_to_the_right))
+        
+        earth_partition = Sphere(center = 3 * RIGHT @ R, radius = 2.5, resolution=(10,10)).rotate(23.5 * DEGREES, axis=RIGHT)
+        self.play(FadeIn(earth_partition.next_to(arrow_to_the_right, RIGHT @ R)))
+        self.play(FadeOut(earth), FadeOut(arrow_to_the_right), earth_partition.animate(run_time = 1).move_to(ORIGIN))
+        
+class SamplesIntoSphere(ThreeDScene):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+   
+    # Globe settings
+    RADIUS = 3.0
 
+    # Number of texture patches.
+    #
+    # Higher values -> better image quality, slower rendering.
+    LATITUDE_PATCHES = 5
+    LONGITUDE_PATCHES = 5
+
+
+    @staticmethod
+    def sphere_point(theta, phi, radius):
+        """
+        theta:
+            longitude angle, 0 ... 2π
+
+        phi:
+            polar angle, 0 ... π
+
+            0   = north pole
+            π/2 = equator
+            π   = south pole
+        """
+
+        return radius * np.array(
+            [
+                np.sin(phi) * np.cos(theta),
+                np.sin(phi) * np.sin(theta),
+                np.cos(phi),
+            ]
+        )
+
+    # ------------------------------------------------------------
+    # Build textured sphere
+    # ------------------------------------------------------------
+
+    def create_textured_earth(self, sample = np.array([[1,0,0,0],[0,0,0,0]])):
+
+        earth = VGroup()
+
+        n_lat = self.LATITUDE_PATCHES
+        n_lon = self.LONGITUDE_PATCHES
+        image_width, image_height = sample.shape
+        print(sample.shape)
+        for i in range(n_lat):
+            # Polar coordinate limits
+            phi_1 = PI * i / n_lat
+            phi_2 = PI * (i + 1) / n_lat
+
+            for j in range(n_lon):
+
+                theta_1 = TAU * j / n_lon
+                theta_2 = TAU * (j + 1) / n_lon
+
+                theta_center = (theta_1 + theta_2) / 2
+
+                # ------------------------------------------------
+                # Texture-coordinate correction
+                #
+                # Depending on the map, you may want to add PI
+                # here to rotate the continents around the globe.
+                # ------------------------------------------------
+
+                texture_theta = theta_center + PI
+
+                texture_theta %= TAU
+
+                color = BLUE if sample[i,j] == 1 else GREY_E
+
+
+                # Each Surface represents one small patch
+                # of the Earth texture.
+                patch = Surface(
+                    lambda u, v: self.sphere_point(
+                        u,
+                        v,
+                        self.RADIUS,
+                    ),
+                    u_range=[theta_1, theta_2],
+                    v_range=[phi_1, phi_2],
+                    resolution=(1, 1),
+                    fill_color=color,
+                    checkerboard_colors=False,
+                    fill_opacity=1,
+                    stroke_width=0,
+                )
+
+                earth.add(patch)
+
+        return earth
+
+   
+    # ------------------------------------------------------------
+    # Scene
+    # ------------------------------------------------------------
+
+    def construct(self):
+
+        # --------------------------------------------------------
+        # Camera
+        # --------------------------------------------------------
+
+        self.set_camera_orientation(
+            phi=70 * DEGREES,
+            theta=-30 * DEGREES,
+            zoom=0.8,
+        )
+
+        # --------------------------------------------------------
+        # Earth
+        # --------------------------------------------------------
+        sample_init = np.random.multinomial(n=1, pvals=[1/25 for i in range(25)])
+        sample_init = sample_init.reshape((5,5))
+        
+        earth = self.create_textured_earth(sample = sample_init)
+
+        # Slight tilt of Earth's rotation axis.
+        
+        earth.rotate(
+            23.5 * DEGREES,
+            axis=RIGHT,
+        )
+        self.play(FadeIn(earth))
+        print(type(np.where(sample_init.flatten()==1)[0]))
+        flat_pos_init = np.where(sample_init.flatten()==1)[0][0]
+        
+
+        samples = np.random.multinomial(n=1, pvals=[1/25 for _ in range(25)], size = 100)
+        samples = np.array([sample.reshape((5,5)) for sample in samples])
+        flat_positions = [np.where(sample.flatten()==1)[0][0] for sample in samples]
+        previous_pos = flat_pos_init
+        values = [0 for _ in range(25)]
+        values[flat_pos_init] += 1
+        chart = BarChart(values = values, bar_names=[i for i in range(25)], y_range = [0, 15, 2], bar_width=1)
+        self.add_fixed_in_frame_mobjects(chart)
+        self.play(Create(chart))
+        for pos in flat_positions:
+            if pos != previous_pos:
+                earth.submobjects[previous_pos].set_fill(GREY_E)
+                earth.submobjects[pos].set_fill(BLUE)
+                values[pos] += 1
+                new_chart = BarChart(values = values, bar_names=[i for i in range(25)], y_range = [0, 15, 2], bar_width=1)
+                self.add_fixed_in_frame_mobjects(new_chart)
+                self.play(Transform(chart,new_chart), run_time = 0.1)
+                chart = new_chart
+                self.wait(0.1)
+                
+            else:
+                self.wait(0.1)
+
+            previous_pos = pos
+            
+        
+            
 
 class BallsIntoUrns(Scene):
     def ball_position_in_urn(self, urn, k):

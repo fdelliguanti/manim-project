@@ -572,7 +572,7 @@ class SamplesIntoSphere(ThreeDScene):
         previous_pos = flat_pos_init
         values = [0 for _ in range(25)]
         values[flat_pos_init] += 1
-        chart = BarChart(values = values, bar_names=[i for i in range(25)], y_range = [0, 15, 2], bar_width=1)
+        chart = BarChart(values = values, bar_names=[i for i in range(25)], y_range = [0, 15, 2], bar_width=1, bar_colors=[WHITE for _ in range(25)])
         self.add_fixed_in_frame_mobjects(chart)
         self.play(Create(chart))
         for pos in flat_positions:
@@ -580,7 +580,7 @@ class SamplesIntoSphere(ThreeDScene):
                 earth.submobjects[previous_pos].set_fill(GREY_E)
                 earth.submobjects[pos].set_fill(BLUE)
                 values[pos] += 1
-                new_chart = BarChart(values = values, bar_names=[i for i in range(25)], y_range = [0, 15, 2], bar_width=1)
+                new_chart = BarChart(values = values, bar_names=[i for i in range(25)], y_range = [0, 15, 2], bar_width=1, bar_colors=[WHITE for _ in range(25)])
                 self.add_fixed_in_frame_mobjects(new_chart)
                 self.play(Transform(chart,new_chart), run_time = 0.1)
                 chart = new_chart
@@ -590,8 +590,14 @@ class SamplesIntoSphere(ThreeDScene):
                 self.wait(0.1)
 
             previous_pos = pos
-            
+        self.play(FadeOut(earth))
+        texts = []
         
+        texts.append(Tex(rf"Sampling $N = {100}$ provides $N_{{\min}} = {np.min(values)}$").scale(0.8).to_edge(UP))
+        texts.append(Tex(r"Question: How many samples $N'$ do you need to sample to have a least number of $k$ samples in every patch with probability at least $p$?").scale(0.8).next_to(texts[-1],DOWN))    
+        for text in texts:
+            self.add_fixed_in_frame_mobjects(text)
+            self.play(Write(text))
             
 
 class BallsIntoUrns(Scene):

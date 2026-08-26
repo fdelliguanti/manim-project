@@ -598,7 +598,25 @@ class SamplesIntoSphere(ThreeDScene):
         for text in texts:
             self.add_fixed_in_frame_mobjects(text)
             self.play(Write(text))
-            
+        
+        self.play(*[FadeOut(text) for text in texts],FadeOut(chart))
+        
+class Text(ThreeDScene):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+    def construct(self):
+        texts = []
+        texts.append(Tex(r"A result of T. Weissmann et al. (2003) provides the following result.").scale(0.8).to_edge(UP))
+        texts.append(Tex(r"$\mathbb P ( \| F - \hat F_L\|_{L_1}\geq \epsilon ) \leq (2^n - 2) \exp\left(-\frac{{L\epsilon^2}}{{2}}\right), \quad \epsilon>0,$").next_to(texts[-1], DOWN))
+        texts.append(Tex(r"where $F$ is some probabilty distribution on $\{1,\dots,n\}, n\in \mathbb N$ fixed, ").scale(0.8).next_to(texts[-1], DOWN))
+        texts.append(Tex(r"$X_1,\dots,X_L \overset{iid}{\sim} F$, for fixed $L\in\mathbb N$").scale(0.8).next_to(texts[-1], DOWN))
+        texts.append(Tex(r"$\hat F$ the empirical probabilty distribution based on $X_1,\dots,X_L$.").scale(0.8).next_to(texts[-1], DOWN))
+        texts.append(Tex(r"Further: $\| F- \hat F_L\|_{L_1} = \sum_{i=1}^n | F(i) - \hat F_L(i) |$.").scale(1).next_to(texts[-1], DOWN))
+        for text in texts:
+            self.add_fixed_in_frame_mobjects(text)
+            self.play(Write(text))
+        
+
 
 class BallsIntoUrns(Scene):
     def ball_position_in_urn(self, urn, k):

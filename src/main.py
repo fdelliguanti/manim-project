@@ -1,4 +1,5 @@
 from manim import *
+from manim.camera.camera import Camera
 from manim.camera.three_d_camera import ThreeDCamera
 import numpy as np
 
@@ -671,6 +672,71 @@ class Text(ThreeDScene):
         self.play(Uncreate(chart), Uncreate(new_chart), *[Uncreate(text) for text in texts[-3:]])
         self.play(Wait(0.5))
     
+class BigSimulationRun(Scene):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+    
+    def construct(self):
+        NUM_PATCHES = 25
+        p = [1/NUM_PATCHES for _ in range(NUM_PATCHES)]
+        L_SOLUTION = 65926
+        SIM_SIZE = 1000
+        X = np.random.multinomial(n=L_SOLUTION, pvals = p, size = SIM_SIZE)
+        print(f"X.shape: {X.shape}")
+        minima = np.min(X, axis = 1)
+        print(f"minima.shape = {minima.shape}, minima[:5] = {minima[:5]}")
+        print(f"P (N_min>=1000) = {np.mean(minima>1000)}")
+        
+        axes = Axes(x_range = [1, SIM_SIZE], y_range = [2000,3000,100], x_axis_config={"include_numbers": False, "include_ticks":False}, y_axis_config={"include_numbers": True, "include_ticks":True})
+        self.add(axes)
+        dots = []
+        for j,e in enumerate(minima):
+            dot = Dot(axes.c2p(j,e))
+            dots.append(dot)
+            self.add(dot)
+        self.play(Wait(1))
+        self.play(Uncreate(axes), [Uncreate(dot) for dot in dots])
+        self.play(Wait(1))
+        
+        texts = []
+        texts.append(Tex("Every simulation yields that the least sample number is at least 1000. Even larger than 2000.").scale(0.8).to_edge(UP))
+        texts.append(Tex(f"Question: Can we chose a $L$ that is lower than theoretical value $L={L_SOLUTION}$?", color = YELLOW).scale(0.8).next_to(texts[-1], DOWN))
+        
+        for text in texts:
+            self.play(Write(text))
+        
+        L_VALUES = [L_SOLUTION, 50000, 40000, 30000, 20000, 10000, 5000, 2000, 1000, 500]
+        
+        SIM_SIZE = 20
+        axes = Axes(x_range = [0, len(L_VALUES)+1],y_length=4, y_range = [0, 3000, 500], x_axis_config={"include_numbers": False, "include_ticks":True}, y_axis_config={"include_numbers": True, "include_ticks":True})
+        axes.add_coordinates({
+            1: MathTex(f"{L_VALUES[0]}"),
+            2: MathTex(f"{L_VALUES[1]}"),
+            3: MathTex(f"{L_VALUES[2]}"),
+            4: MathTex(f"{L_VALUES[3]}"),
+            5: MathTex(f"{L_VALUES[4]}"),
+            6: MathTex(f"{L_VALUES[5]}"),
+            7: MathTex(f"{L_VALUES[6]}"),
+            8: MathTex(f"{L_VALUES[7]}"),
+            9: MathTex(f"{L_VALUES[8]}"),
+            10: MathTex(f"{L_VALUES[9]}")
+        })
+        self.add(axes)
+        X_JITTER = np.random.standard_normal(1000)/50
+        dots = []
+        MY_COLORS = [BLUE_A, BLUE_B, BLUE_C, BLUE_D, BLUE_E, PURPLE_E, PURPLE_D, PURPLE_C, PURPLE_B, PURPLE_A]
+        for j,L in enumerate(L_VALUES):
+            X = np.random.multinomial(n=L, pvals = p, size = SIM_SIZE)
+            
+            minima = np.min(X, axis = 1)
+            for k,m in enumerate(minima):
+                dot = Dot(axes.c2p(1+ j + X_JITTER[j + k], m), color=MY_COLORS[j])
+                dots.append(dot)
+                self.play(Create(dot, run_time = 0.01))
+                
+        self.play(Wait(1))
+
+        
 class BallsIntoUrns(Scene):
     def ball_position_in_urn(self, urn, k):
         """

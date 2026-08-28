@@ -605,6 +605,9 @@ class Text(ThreeDScene):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
     def construct(self):
+        myTemplate = TexTemplate()
+        myTemplate.add_to_preamble(r"\usepackage{bbm}")
+        
         texts = []
         texts.append(Tex(r"A result of T. Weissmann et al. (2003) provides the following result.").scale(0.8).to_edge(UP))
         texts.append(Tex(r"$\mathbb P ( \| F - \hat F_L\|_{L_1}\geq \epsilon ) \leq (2^n - 2) \exp\left(-\frac{{L\epsilon^2}}{{2}}\right), \quad \epsilon>0,$").next_to(texts[-1], DOWN))
@@ -616,8 +619,51 @@ class Text(ThreeDScene):
             self.add_fixed_in_frame_mobjects(text)
             self.play(Write(text))
         
-
-
+        self.play(*[FadeOut(text) for text in texts])
+        
+        texts = []
+        texts.append(Tex(r"Derive: $\|F-\hat F_L\|_{L_1}\leq \epsilon \iff \sum_{i=1}^n | F(i) - \hat F_L(i) |\leq \epsilon$").scale(0.8).to_edge(UP))
+        texts.append(Tex(r" $\implies \quad |F(i) - \hat F_L(i) |\leq \epsilon \; \forall i \in\{1,\dots,n\}$").scale(0.8).next_to(texts[-1], DOWN))
+        texts.append(Tex(r"$\implies \quad -\epsilon\leq - F(i) + \hat F_L(i) \leq \epsilon \; \forall i \in\{1,\dots,n\}$").scale(0.8).next_to(texts[-1], DOWN))
+        texts.append(Tex(r"$\implies \quad F(i)-\epsilon\leq \hat F_L(i) \leq F(i)+\epsilon \; \forall i \in\{1,\dots,n\}$").scale(0.8).next_to(texts[-1], DOWN))
+        texts.append(Tex(r"Note: $L\hat F_L(i) = \sum_{j=1}^L \mathbbm 1_{\{X_j = i\}}$ counts exactly how many samples landed in patch $i$ for every $i\in\{1,\dots,n\}.$", tex_template = myTemplate).scale(0.8).next_to(texts[-1], DOWN))
+        texts.append(Tex(r"Derive: $F(i)-\epsilon \leq \hat F_L(i) = \sum_{j=1}^L \mathbbm 1_{\{X_j = i\}} \;\forall i\in\{1,\dots,n\}$.", tex_template = myTemplate).scale(0.8).next_to(texts[-1], DOWN))
+        texts.append(Tex(r"Since we have an implication chain the last expression holds with at least the same probabilty as the first expression.", tex_template = myTemplate).scale(0.8).next_to(texts[-1], DOWN))
+        texts.append(Tex(r"Wanted: $0.05> 1-(2^n - 2) \exp\left(-\frac{{L\epsilon^2}}{{2}}\right), \quad k=1000$ samples at least.", tex_template = myTemplate).scale(0.8).next_to(texts[-1], DOWN)) 
+        for text in texts:
+                self.add_fixed_in_frame_mobjects(text)
+                self.play(Write(text))
+                
+        self.play(*[FadeOut(text) for text in texts[:-1]], texts[-1].animate.to_edge(UP))
+        del texts[:-1]
+        
+        texts.append(Tex(r"Solution: $L=65926$").scale(0.8).next_to(texts[-1], DOWN))
+        for text in texts[1:]:
+                        self.add_fixed_in_frame_mobjects(text)
+                        self.play(Write(text))
+        self.play(FadeOut(texts[0]), texts[-1].animate.to_edge(UP))
+        
+        ### Simulation for different L values, e.g. 10k, 20k, ... 50k
+        NUM_PATCHES = 25
+        p = [1/NUM_PATCHES for _ in range(NUM_PATCHES)]
+        L_SOLUTION = 65926
+        X = np.random.multinomial(n=1, pvals = p, size = L_SOLUTION)
+        vals = [0 for _ in range(25)]
+        print(f"X.shape: {X.shape}")
+        chart = BarChart(values = vals, bar_colors = [WHITE for _ in range(25)], bar_names=[i for i in range(1,26)], bar_width=0.1).next_to(texts[-1], DOWN)
+        self.add_fixed_in_frame_mobjects(chart)
+        self.play(Create(chart))
+        STEP_SIZE = 1000
+        for j,x in enumerate(X):
+            vals += x
+            if j % STEP_SIZE == 0:
+                new_chart = BarChart(values=vals, bar_colors = [WHITE for _ in range(25)], bar_names=[i for i in range(1,26)], bar_width=0.1)
+                self.play(Transform(chart,new_chart, run_time=0.1))
+                self.wait(0.1)
+                
+        texts.append(Tex(rf"$N_{{\min}} = {np.min(np.sum(X,axis = 0))}$").scale(0.8).next_to(texts[-1], DOWN))
+        self.add_fixed_in_frame_mobjects(texts[-1])
+        self.play(Write(texts[-1]))
 class BallsIntoUrns(Scene):
     def ball_position_in_urn(self, urn, k):
         """

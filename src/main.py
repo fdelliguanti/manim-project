@@ -642,28 +642,35 @@ class Text(ThreeDScene):
                         self.add_fixed_in_frame_mobjects(text)
                         self.play(Write(text))
         self.play(FadeOut(texts[0]), texts[-1].animate.to_edge(UP))
-        
-        ### Simulation for different L values, e.g. 10k, 20k, ... 50k
+        del texts[:-1]
+        ### Simulation for suitable L values, e.g. 10k, 20k, ... 50k
         NUM_PATCHES = 25
         p = [1/NUM_PATCHES for _ in range(NUM_PATCHES)]
         L_SOLUTION = 65926
         X = np.random.multinomial(n=1, pvals = p, size = L_SOLUTION)
         vals = [0 for _ in range(25)]
         print(f"X.shape: {X.shape}")
-        chart = BarChart(values = vals, bar_colors = [WHITE for _ in range(25)], bar_names=[i for i in range(1,26)], bar_width=0.1).next_to(texts[-1], DOWN)
+        chart = BarChart(values = vals, bar_colors = [WHITE for _ in range(25)],y_range=[0, 3000, 500], bar_names=[i for i in range(1,26)], bar_width=0.5, x_length = 9).next_to(texts[-1], DOWN)
         self.add_fixed_in_frame_mobjects(chart)
         self.play(Create(chart))
         STEP_SIZE = 1000
         for j,x in enumerate(X):
             vals += x
             if j % STEP_SIZE == 0:
-                new_chart = BarChart(values=vals, bar_colors = [WHITE for _ in range(25)], bar_names=[i for i in range(1,26)], bar_width=0.1)
+                new_chart = BarChart(values=vals, bar_colors = [WHITE for _ in range(25)], y_range=[0, 3000, 500],bar_names=[i for i in range(1,26)], bar_width=0.5, x_length = 9)
                 self.play(Transform(chart,new_chart, run_time=0.1))
                 self.wait(0.1)
                 
         texts.append(Tex(rf"$N_{{\min}} = {np.min(np.sum(X,axis = 0))}$").scale(0.8).next_to(texts[-1], DOWN))
         self.add_fixed_in_frame_mobjects(texts[-1])
         self.play(Write(texts[-1]))
+        texts.append(Tex(rf"$\geq 1000$", color = YELLOW).scale(0.8).next_to(texts[-1], RIGHT))
+        self.play(Write(texts[-1]))
+        self.play(Wait(1))
+        
+        self.play(Uncreate(chart), Uncreate(new_chart), *[Uncreate(text) for text in texts[-3:]])
+        self.play(Wait(0.5))
+    
 class BallsIntoUrns(Scene):
     def ball_position_in_urn(self, urn, k):
         """

@@ -767,7 +767,7 @@ class BinomialApproach(Scene):
         
         texts = []
         texts.append(Tex("Density function of Binomial distribution:").scale(0.8).next_to(vgroup, DOWN))
-        texts.append(MathTex(r"f(k) = \binom{n}{k} p^{n-k} (1-p)^k = \binom{n}{k} 0.1^{n-k} 0.9^k").scale(0.8).next_to(texts[-1],DOWN))
+        texts.append(MathTex(r"f(k) = \binom{n}{k} p^{k} (1-p)^{n-k} = \binom{n}{k} 0.1^{k} 0.9^{n-k}").scale(0.8).next_to(texts[-1],DOWN))
         
         for t in texts:
             self.play(Write(t))
@@ -776,6 +776,15 @@ class BinomialApproach(Scene):
         self.play(Wait(1))
         
         # Cumulative Density Function
+        del texts
+        
+        texts = []
+        texts.append(Tex("Cumulative Density Function of the Binomial distribution:").scale(0.8).to_edge(UP))
+        texts.append(MathTex(r"F(k;n) = \sum_{j=0}^k \binom{n}{j}0.1^{j} 0.9^{n-j}").scale(0.8).next_to(texts[-1], DOWN))
+        texts.append(Tex(r"WANTED: $n\geq 1000$ such that $F(999;n)\leq 0.05$").scale(0.8).next_to(texts[-1], DOWN))
+        
+        for t in texts:
+            self.play(Write(t))
         
 class BallsIntoUrns(Scene):
     def ball_position_in_urn(self, urn, k):

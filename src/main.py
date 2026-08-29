@@ -707,10 +707,12 @@ class BigSimulationRun(Scene):
         
         L_VALUES = [L_SOLUTION, 50000, 40000, 30000, 20000, 10000, 5000, 2000, 1000, 500]
         
-        SIM_SIZE = 20
+        SIM_SIZE = 5
         axes = Axes(x_range = [0, len(L_VALUES)+1],y_length=4, y_range = [0, 3000, 500], x_axis_config={"include_numbers": False, "include_ticks":True}, y_axis_config={"include_numbers": True, "include_ticks":True})
+        label = axes.get_x_axis_label(label="L")
+        self.add(label)
         axes.add_coordinates({
-            1: MathTex(f"{L_VALUES[0]}"),
+            1: MathTex(f"{L_VALUES[0]}", color = YELLOW),
             2: MathTex(f"{L_VALUES[1]}"),
             3: MathTex(f"{L_VALUES[2]}"),
             4: MathTex(f"{L_VALUES[3]}"),
@@ -722,9 +724,9 @@ class BigSimulationRun(Scene):
             10: MathTex(f"{L_VALUES[9]}")
         })
         self.add(axes)
-        X_JITTER = np.random.standard_normal(1000)/50
+        X_JITTER = np.random.standard_normal(1000)/10
         dots = []
-        MY_COLORS = [BLUE_A, BLUE_B, BLUE_C, BLUE_D, BLUE_E, PURPLE_E, PURPLE_D, PURPLE_C, PURPLE_B, PURPLE_A]
+        MY_COLORS = [YELLOW, BLUE_B, BLUE_C, BLUE_D, BLUE_E, PURPLE_E, PURPLE_D, PURPLE_C, PURPLE_B, PURPLE_A]
         for j,L in enumerate(L_VALUES):
             X = np.random.multinomial(n=L, pvals = p, size = SIM_SIZE)
             
@@ -735,8 +737,9 @@ class BigSimulationRun(Scene):
                 self.play(Create(dot, run_time = 0.01))
                 
         self.play(Wait(1))
+        self.play(Create(SurroundingRectangle(axes.x_axis.labels[3])))
 
-        
+
 class BallsIntoUrns(Scene):
     def ball_position_in_urn(self, urn, k):
         """

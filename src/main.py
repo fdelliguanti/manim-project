@@ -739,7 +739,44 @@ class BigSimulationRun(Scene):
         self.play(Wait(1))
         self.play(Create(SurroundingRectangle(axes.x_axis.labels[3])))
 
-
+class BinomialApproach(Scene):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+    
+    def construct(self):
+        texts = []
+        texts.append(Tex(r"Assume you know the patch $j_0\in\{1,\dots,n\}$ with the least probabilty $p_{\min} =p_{j_0}$.").scale(0.8).to_edge(UP))
+        NUM_RECTANGLES = 4
+        colors = [BLUE_A, BLUE_B, BLUE_C, BLUE_D, BLUE_E] 
+        rects = []
+        for j,_ in enumerate(range(NUM_RECTANGLES)):
+            if j == 0:
+                rects.append(Rectangle(color = colors[j], width=2, height = 2).to_edge(LEFT))
+            else:
+                rects.append(Rectangle(color = colors[j], width=2, height = 2).next_to(rects[-1],RIGHT))
+        group = VGroup(rects[1:]).arrange(RIGHT)
+        vgroup = VGroup(rects[0],group).arrange(RIGHT)
+        self.play(Create(vgroup, run_time = 2))
+        self.play(Write(texts[0]),Create(SurroundingRectangle(rects[0])))
+        self.play(Wait(1))
+        self.play(Create(SurroundingRectangle(group, color=RED)))
+        probabilities = [0.1, 0.5, 0.25, 0.25]
+        for j,p in enumerate(probabilities):
+            self.play(Write(MathTex(f"p_{j+1} = {p}").scale(0.8).move_to(rects[j].get_center())))
+        del texts
+        
+        texts = []
+        texts.append(Tex("Density function of Binomial distribution:").scale(0.8).next_to(vgroup, DOWN))
+        texts.append(MathTex(r"f(k) = \binom{n}{k} p^{n-k} (1-p)^k = \binom{n}{k} 0.1^{n-k} 0.9^k").scale(0.8).next_to(texts[-1],DOWN))
+        
+        for t in texts:
+            self.play(Write(t))
+            
+        self.play(*[Uncreate(obj) for obj in self.mobjects if isinstance(obj, VMobject)])
+        self.play(Wait(1))
+        
+        # Cumulative Density Function
+        
 class BallsIntoUrns(Scene):
     def ball_position_in_urn(self, urn, k):
         """

@@ -2,6 +2,7 @@ from manim import *
 from manim.camera.camera import Camera
 from manim.camera.three_d_camera import ThreeDCamera
 import numpy as np
+from scipy import stats 
 
 
 from manim import *
@@ -781,11 +782,37 @@ class BinomialApproach(Scene):
         texts = []
         texts.append(Tex("Cumulative Density Function of the Binomial distribution:").scale(0.8).to_edge(UP))
         texts.append(MathTex(r"F(k;n) = \sum_{j=0}^k \binom{n}{j}0.1^{j} 0.9^{n-j}").scale(0.8).next_to(texts[-1], DOWN))
-        texts.append(Tex(r"WANTED: $n\geq 1000$ such that $F(999;n)\leq 0.05$").scale(0.8).next_to(texts[-1], DOWN))
+        texts.append(Tex(r"WANTED: Smallest $n\geq 1000$ such that $F(999;n)\leq 0.05$", color = YELLOW).scale(0.8).next_to(texts[-1], DOWN))
         
         for t in texts:
             self.play(Write(t))
         
+        
+        STEP_SIZE = 100
+        L_VALUES = range(0,12000,STEP_SIZE)
+        
+        dots = []
+        axes = Axes(x_length=6, y_length = 4, x_range = [L_VALUES[0], L_VALUES[-1], 1000], y_range = [0, 1, 0.1], y_axis_config = {"include_numbers": True, "font_size": 20}, x_axis_config={"include_numbers": True, "font_size": 20}).next_to(texts[-1], DOWN)
+        for e in axes.x_axis.numbers:
+            e.rotate(45 * DEGREES)
+            
+        self.play(Create(axes),Create(axes.get_x_axis_label(Tex("n").scale(0.5))), Create(axes.get_y_axis_label(Tex("CDF").scale(0.5))))
+        values = []
+        for L in L_VALUES:
+            cum_prob = stats.binom.cdf(999,L,0.1)
+            values.append(cum_prob)
+            dot = Dot(axes.c2p(L,cum_prob))
+            self.play(Create(dot, run_time = 0.1))
+        self.play(Wait(1))
+        values = np.array(values)
+        pos_quantile = np.sum(values>=0.05)
+        
+        line_1 = axes.get_vertical_line(axes.c2p(pos_quantile * STEP_SIZE,1), color=YELLOW)
+        self.play(Create(line_1))
+        self.play(Wait(1))
+        
+        self.play(Create(MathTex(rf"({pos_quantile * STEP_SIZE} \; | \;{values[pos_quantile]:.3f}", color = YELLOW).scale(0.8).next_to(line_1, RIGHT)))
+        self.play(Wait(1))
 class BallsIntoUrns(Scene):
     def ball_position_in_urn(self, urn, k):
         """

@@ -761,14 +761,14 @@ class BinomialApproach(Scene):
         self.play(Write(texts[0]),Create(SurroundingRectangle(rects[0])))
         self.play(Wait(1))
         self.play(Create(SurroundingRectangle(group, color=RED)))
-        probabilities = [0.1, 0.5, 0.25, 0.25]
+        probabilities = [0.04, 0.04, 0.04, 1 - 3* 0.04]
         for j,p in enumerate(probabilities):
             self.play(Write(MathTex(f"p_{j+1} = {p}").scale(0.8).move_to(rects[j].get_center())))
         del texts
         
         texts = []
         texts.append(Tex("Density function of Binomial distribution:").scale(0.8).next_to(vgroup, DOWN))
-        texts.append(MathTex(r"f(k) = \binom{n}{k} p^{k} (1-p)^{n-k} = \binom{n}{k} 0.1^{k} 0.9^{n-k}").scale(0.8).next_to(texts[-1],DOWN))
+        texts.append(MathTex(r"f(k) = \binom{n}{k} p^{k} (1-p)^{n-k} = \binom{n}{k} 0.04^{k} 0.96^{n-k}").scale(0.8).next_to(texts[-1],DOWN))
         
         for t in texts:
             self.play(Write(t))
@@ -781,38 +781,68 @@ class BinomialApproach(Scene):
         
         texts = []
         texts.append(Tex("Cumulative Density Function of the Binomial distribution:").scale(0.8).to_edge(UP))
-        texts.append(MathTex(r"F(k;n) = \sum_{j=0}^k \binom{n}{j}0.1^{j} 0.9^{n-j}").scale(0.8).next_to(texts[-1], DOWN))
+        texts.append(MathTex(r"F(k;n) = \sum_{j=0}^k \binom{n}{j}0.04^{j} 0.96^{n-j}").scale(0.8).next_to(texts[-1], DOWN))
         texts.append(Tex(r"WANTED: Smallest $n\geq 1000$ such that $F(999;n)\leq 0.05$", color = YELLOW).scale(0.8).next_to(texts[-1], DOWN))
         
         for t in texts:
             self.play(Write(t))
         
         
-        STEP_SIZE = 100
-        L_VALUES = range(0,12000,STEP_SIZE)
+        STEP_SIZE = 1000
+        L_VALUES = range(10000,40000,STEP_SIZE)
         
         dots = []
-        axes = Axes(x_length=6, y_length = 4, x_range = [L_VALUES[0], L_VALUES[-1], 1000], y_range = [0, 1, 0.1], y_axis_config = {"include_numbers": True, "font_size": 20}, x_axis_config={"include_numbers": True, "font_size": 20}).next_to(texts[-1], DOWN)
+        axes = Axes(x_length=6, y_length = 4, x_range = [L_VALUES[0], L_VALUES[-1], 1000], y_range = [0, 1, 0.1], tips = False, y_axis_config = {"include_numbers": True, "font_size": 20}, x_axis_config={"include_numbers": True, "font_size": 20}).next_to(texts[-1], DOWN)
         for e in axes.x_axis.numbers:
             e.rotate(45 * DEGREES)
             
         self.play(Create(axes),Create(axes.get_x_axis_label(Tex("n").scale(0.5))), Create(axes.get_y_axis_label(Tex("CDF").scale(0.5))))
         values = []
         for L in L_VALUES:
-            cum_prob = stats.binom.cdf(999,L,0.1)
+            cum_prob = stats.binom.cdf(999,L,0.04)
             values.append(cum_prob)
-            dot = Dot(axes.c2p(L,cum_prob))
+            dot = Dot(axes.c2p(L,cum_prob)).scale(0.5)
             self.play(Create(dot, run_time = 0.1))
         self.play(Wait(1))
         values = np.array(values)
-        pos_quantile = np.sum(values>=0.05)
+        pos_quantile = np.sum(values>0.002)
         
-        line_1 = axes.get_vertical_line(axes.c2p(pos_quantile * STEP_SIZE,1), color=YELLOW)
+        line_1 = axes.get_vertical_line(axes.c2p(L_VALUES[0] + pos_quantile * STEP_SIZE,1), color=YELLOW)
         self.play(Create(line_1))
         self.play(Wait(1))
         
-        self.play(Create(MathTex(rf"({pos_quantile * STEP_SIZE} \; | \;{values[pos_quantile]:.3f}", color = YELLOW).scale(0.8).next_to(line_1, RIGHT)))
+        dot_quantile = Dot(axes.c2p(L_VALUES[0] + pos_quantile * STEP_SIZE, values[pos_quantile]), color = YELLOW).scale(0.8)
+        self.play(Create(dot_quantile),Create(MathTex(rf"({L_VALUES[0] + pos_quantile * STEP_SIZE} \; | \;{values[pos_quantile]:.3f})", color = YELLOW).scale(0.6).next_to(dot_quantile, RIGHT + UP)))
         self.play(Wait(1))
+        
+        self.play(*[Uncreate(obj) for obj in self.mobjects if isinstance(obj, VMobject)])
+            
+        self.play(Wait(1))
+        
+        texts = []
+        L_SOLUTION = L_VALUES[0] + pos_quantile * STEP_SIZE
+        texts.append(Tex(rf"Result: $n = {L_SOLUTION}$ yields that $\mathbb P (N_{{\min}}\geq 1000)\geq 0.95$").scale(0.8).to_edge(UP))
+        texts.append(Tex("Now, let us check, if this result can be observed also by simulations.").scale(0.8).next_to(texts[-1], DOWN))
+        self.play(*[Create(text) for text in texts])
+        
+        NUM_PATCHES = 25
+        SIM_SIZE = 200
+        probabilities = [1/NUM_PATCHES for _ in range(NUM_PATCHES)]
+        
+        X = np.random.multinomial(n=L_SOLUTION, pvals = probabilities, size = SIM_SIZE)
+        print(f"X.shape: {X.shape}")
+        minima = np.min(X, axis = 1)
+        print(f"minimum.shape: {minima.shape}")
+        
+        percentage_minima_higher_thr = np.mean(minima>=1000)
+        print(f"percentage_minima_higher_thr = {percentage_minima_higher_thr}")
+        axes = Axes(x_length=6, y_length = 4, x_range = [1, SIM_SIZE, SIM_SIZE//10], y_range = [1000, 1600, 100], tips = False, y_axis_config = {"include_numbers": True, "font_size": 20}, x_axis_config={"include_numbers": False, "font_size": 20}).next_to(texts[-1], DOWN)
+        self.play(Create(axes))
+        for j,m in enumerate(minima):
+            dot = Dot(axes.c2p(j+1,m))
+            self.play(Create(dot, run_time = 0.1))
+        self.play(Wait(1))
+        
 class BallsIntoUrns(Scene):
     def ball_position_in_urn(self, urn, k):
         """

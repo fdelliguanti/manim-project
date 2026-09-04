@@ -753,17 +753,27 @@ class BinomialApproach(Scene):
         for j,_ in enumerate(range(NUM_RECTANGLES)):
             if j == 0:
                 rects.append(Rectangle(color = colors[j], width=2, height = 2).to_edge(LEFT))
+            
+            elif j== NUM_RECTANGLES - 2:
+                rects.append(Rectangle(color = colors[j], width=2, height = 2).next_to(rects[-1],RIGHT))
+                rects.append(MathTex(r"\dots").next_to(rects[-1],RIGHT))
             else:
                 rects.append(Rectangle(color = colors[j], width=2, height = 2).next_to(rects[-1],RIGHT))
+                
         group = VGroup(rects[1:]).arrange(RIGHT)
         vgroup = VGroup(rects[0],group).arrange(RIGHT)
         self.play(Create(vgroup, run_time = 2))
         self.play(Write(texts[0]),Create(SurroundingRectangle(rects[0])))
         self.play(Wait(1))
         self.play(Create(SurroundingRectangle(group, color=RED)))
-        probabilities = [0.04, 0.04, 0.04, 1 - 3* 0.04]
+        NUM_PATCHES = 25
+        probabilities = [1/NUM_PATCHES for _ in range(NUM_RECTANGLES)]
         for j,p in enumerate(probabilities):
-            self.play(Write(MathTex(f"p_{j+1} = {p}").scale(0.8).move_to(rects[j].get_center())))
+            if j <= NUM_RECTANGLES-2:
+                self.play(Write(MathTex(f"p_{j+1} = {p}").scale(0.8).move_to(rects[j].get_center())))
+            if j==NUM_RECTANGLES-1:
+                self.play(Write(MathTex(f"p_{{{NUM_PATCHES}}} = {p}").scale(0.8).move_to(rects[NUM_RECTANGLES].get_center())))
+
         del texts
         
         texts = []
@@ -782,7 +792,7 @@ class BinomialApproach(Scene):
         texts = []
         texts.append(Tex("Cumulative Density Function of the Binomial distribution:").scale(0.8).to_edge(UP))
         texts.append(MathTex(r"F(k;n) = \sum_{j=0}^k \binom{n}{j}0.04^{j} 0.96^{n-j}").scale(0.8).next_to(texts[-1], DOWN))
-        texts.append(Tex(r"WANTED: Smallest $n\geq 1000$ such that $F(999;n)\leq 0.05$", color = YELLOW).scale(0.8).next_to(texts[-1], DOWN))
+        texts.append(Tex(r"WANTED: Smallest $n\geq 1000$ such that $F(999;n)\leq 0.002$", color = YELLOW).scale(0.8).next_to(texts[-1], DOWN))
         
         for t in texts:
             self.play(Write(t))
@@ -805,7 +815,7 @@ class BinomialApproach(Scene):
             self.play(Create(dot, run_time = 0.1))
         self.play(Wait(1))
         values = np.array(values)
-        pos_quantile = np.sum(values>0.002)
+        pos_quantile = np.sum(values>1 - 24.95/25)
         
         line_1 = axes.get_vertical_line(axes.c2p(L_VALUES[0] + pos_quantile * STEP_SIZE,1), color=YELLOW)
         self.play(Create(line_1))
@@ -836,13 +846,55 @@ class BinomialApproach(Scene):
         
         percentage_minima_higher_thr = np.mean(minima>=1000)
         print(f"percentage_minima_higher_thr = {percentage_minima_higher_thr}")
-        axes = Axes(x_length=6, y_length = 4, x_range = [1, SIM_SIZE, SIM_SIZE//10], y_range = [1000, 1600, 100], tips = False, y_axis_config = {"include_numbers": True, "font_size": 20}, x_axis_config={"include_numbers": False, "font_size": 20}).next_to(texts[-1], DOWN)
+        axes = Axes(x_length=6, y_length = 4, x_range = [1, SIM_SIZE, SIM_SIZE//10], y_range = [950, 1150, 50], tips = False, y_axis_config = {"include_numbers": True, "font_size": 20}, x_axis_config={"include_numbers": False, "font_size": 20}).next_to(texts[-1], DOWN)
         self.play(Create(axes))
         for j,m in enumerate(minima):
             dot = Dot(axes.c2p(j+1,m))
             self.play(Create(dot, run_time = 0.1))
         self.play(Wait(1))
+class BinomialApproachExplanation(Scene):
+    def __init__(self,**kwargs):
+        super().__init__(**kwargs)
+    def construct(self):
+        texts = []
+        texts.append(Tex("Cumulative Density Function of the Binomial distribution:").scale(0.8).to_edge(UP))
+        texts.append(MathTex(r"F(k;n) = \sum_{j=0}^k \binom{n}{j}0.04^{j} 0.96^{n-j}").scale(0.8).next_to(texts[-1], DOWN))
+        self.play(*[Write(text) for text in texts])
         
+        tex = []
+        tex.append(Tex(r"WANTED: Smallest $n\geq 1000$ such that ", color = YELLOW).scale(0.8))
+        tex.append(MathTex(r"F(999;n)\leq 0.002", color  = YELLOW).scale(0.8).next_to(tex[-1],RIGHT))
+        group = VGroup(*tex).next_to(texts[-1], DOWN)
+        self.play(Write(group))
+        self.play(Create(SurroundingRectangle(tex[-1])))
+        self.play(Wait(1))
+        
+        del texts, tex
+        texts = []
+        texts.append(Tex(r"Final result should be: $\mathbb P(N_{{\min}}\geq 1000)\geq 0.95$").scale(0.8).to_edge(UP))
+        texts.append(Tex(r"Observe: $N_{{\min}}\geq 1000 \; \iff \; N_1\geq 1000 \wedge \dots \wedge N_{{25}}\geq 1000$ ").scale(0.8).next_to(texts[-1], DOWN))
+        texts.append(Tex(r"$\implies \mathbb P (N_{{\min}}\geq 1000) =\mathbb P( N_1\geq 1000 \wedge \dots \wedge N_{25} \geq 1000)$ ").scale(0.8).next_to(texts[-1], DOWN))
+        texts.append(Tex(r"Use: $\mathbb P(A\cup B) = \mathbb P (A) + \mathbb P (B) - \mathbb P(A\cap B) \;\iff\; \mathbb P(A\cap B) = \mathbb P (A) + \mathbb P (B) -\underbrace{\mathbb P(A\cup B)}_{\leq 1}$ ").scale(0.8).next_to(texts[-1], DOWN))
+        texts.append(Tex(r"Implies: $\mathbb P(A\cap B) \geq \mathbb P (A) + \mathbb P (B) - 1$ ").scale(0.8).next_to(texts[-1], DOWN))
+        texts.append(Tex(r"Implies: $\mathbb P\left(\bigcap_{j=1}^{25} A_j\right) \geq \sum_{j=1}^{25}\mathbb P (A_j) - (25-1)$, where $A_j :=\{X_j\geq 1000\}.$ ").scale(0.8).next_to(texts[-1], DOWN))
+        texts.append(Tex(r"Known: $\mathbb P(A_j) = 1 - F(999;n)=:q_n$ for every $j\in\{1,\dots,25\}$").scale(0.8).next_to(texts[-1], DOWN))
+        texts.append(Tex(r"I.e. $\mathbb P(N_{{\min}}) \geq 25 q_n - 24$. ").scale(0.8).next_to(texts[-1], DOWN))
+        texts.append(Tex(r"Requiring $25 q_n - 24\geq 0.95$ yields as desired $\mathbb P(N_{{\min}}) \geq 0.95$. ").scale(0.8).next_to(texts[-1], DOWN))
+
+        self.play(*[Uncreate(obj) for obj in self.mobjects if isinstance(obj,VMobject) ])
+        self.play(Succession(*[Write(text) for text in texts]))
+        del texts
+        texts = []
+        texts.append(Tex(r"It holds: $25 q_n - 24\geq 0.95 \; \iff \; q_n\geq \frac{{24.95}}{{25}} = 0.998$").scale(0.8).to_edge(UP))
+        tex_1 = Tex(r"Find: $n\geq 1000$ such that $q_n = 1-F(999;n)\geq 0.998$, i.e. such that ").scale(0.8)
+        tex_2 = Tex(r"$F(999;n)\leq 0.002.$").next_to(tex_1,RIGHT).scale(0.8)
+        
+        group = VGroup(tex_1,tex_2).arrange(DOWN).next_to(texts[-1],DOWN)
+        self.play(*[Uncreate(obj) for obj in self.mobjects if isinstance(obj,VMobject)])
+        self.play(*[Write(text) for text in texts])
+        self.play(Write(group))
+        self.play(Create(SurroundingRectangle(tex_2)))
+        self.play(Wait(1))
 class BallsIntoUrns(Scene):
     def ball_position_in_urn(self, urn, k):
         """

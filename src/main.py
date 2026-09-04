@@ -103,7 +103,7 @@ from PIL import Image
 
 
 class RotatingEarth(ThreeDScene):
-    PRECISION = 0.1
+    PRECISION = 0.05
     EARTH_URL = (
         "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/"
         "Whole_world_-_land_and_oceans.jpg/"
@@ -113,7 +113,7 @@ class RotatingEarth(ThreeDScene):
     EARTH_FILE = Path("assets") / "earth.jpg"
 
     # Globe settings
-    RADIUS = 3.0
+    RADIUS = 2.5
 
     # Number of texture patches.
     #
@@ -266,72 +266,6 @@ class RotatingEarth(ThreeDScene):
         return earth
 
     # ------------------------------------------------------------
-    # Latitude / longitude mesh
-    # ------------------------------------------------------------
-
-    def create_earth_mesh(self):
-        mesh = VGroup()
-
-        radius = self.RADIUS * 1.002
-
-        # --------------------------------------------------------
-        # Latitude lines
-        # --------------------------------------------------------
-
-        for latitude in range(
-            -75,
-            90,
-            self.LATITUDE_STEP,
-        ):
-            lat = latitude * DEGREES
-
-            # Convert latitude to polar angle.
-            phi = PI / 2 - lat
-
-            latitude_line = ParametricFunction(
-                lambda theta, phi=phi: self.sphere_point(
-                    theta,
-                    phi,
-                    radius,
-                ),
-                t_range=[0, TAU],
-                color=WHITE,
-                stroke_width=0.7,
-            )
-
-            latitude_line.set_opacity(0.35)
-
-            mesh.add(latitude_line)
-
-        # --------------------------------------------------------
-        # Longitude lines
-        # --------------------------------------------------------
-
-        for longitude in range(
-            0,
-            360,
-            self.LONGITUDE_STEP,
-        ):
-            theta = longitude * DEGREES
-
-            longitude_line = ParametricFunction(
-                lambda phi, theta=theta: self.sphere_point(
-                    theta,
-                    phi,
-                    radius,
-                ),
-                t_range=[0, PI],
-                color=WHITE,
-                stroke_width=0.7,
-            )
-
-            longitude_line.set_opacity(0.35)
-
-            mesh.add(longitude_line)
-
-        return mesh
-
-    # ------------------------------------------------------------
     # Scene
     # ------------------------------------------------------------
 
@@ -359,11 +293,8 @@ class RotatingEarth(ThreeDScene):
 
         earth = self.create_textured_earth(texture_file)
 
-        #mesh = self.create_earth_mesh()
-
         globe = VGroup(
-            earth,
-            #mesh,
+            earth
         )
 
         # Slight tilt of Earth's rotation axis.
@@ -376,16 +307,15 @@ class RotatingEarth(ThreeDScene):
         # --------------------------------------------------------
         # Appearance
         # --------------------------------------------------------
-        title = Tex(r"Imagine your aim it to study climate on earth. E.g. for the climate change").scale(0.75).to_edge(UP)
-        self.add_fixed_in_frame_mobjects(title)
-        self.play(Write(title))
-        text_before_means = []
-        text_before_means.append(Tex(r"Quantities like temperature, pressure and humidity are not only measured by fixed placed weather stations. But moving devices like wether balloons, air crafts and ships collect also data.").scale(0.75).next_to(title, DOWN, buff = 0.5))
-        text_before_means.append(Tex(r"Problem: In a time window, e.g. one month, moving devices do not necessarily cover in a every regions of the earth uniformly.").scale(0.75).next_to(text_before_means[-1],DOWN, buff = 0.2))
-        text_before_means.append(Tex(r"Consequence: In order to reconstruct the global climate you need a coverage in a every region world-wide.").scale(0.75).next_to(text_before_means[-1],DOWN, buff = 0.2))
+        #title = Tex(r"Imagine your aim it to study climate on earth. E.g. for the climate change").scale(0.75).to_edge(UP)
+        #self.add_fixed_in_frame_mobjects(title)
+        self.play(Wait(1))
+        #text_before_means = []
+        #text_before_means.append(Tex(r"Quantities like temperature, pressure and humidity are not only measured by fixed placed weather stations. But moving devices like wether balloons, air crafts and ships collect also data.").scale(0.75).next_to(title, DOWN, buff = 0.5))
+        #text_before_means.append(Tex(r"Problem: In a time window, e.g. one month, moving devices do not necessarily cover in a every regions of the earth uniformly.").scale(0.75).next_to(text_before_means[-1],DOWN, buff = 0.2))
+        #text_before_means.append(Tex(r"Consequence: In order to reconstruct the global climate you need a coverage in a every region world-wide.").scale(0.75).next_to(text_before_means[-1],DOWN, buff = 0.2))
         self.play(
-                    FadeIn(earth),
-                    #Create(mesh),
+                    FadeIn(globe),
                     run_time=2,
                 )
         
@@ -395,15 +325,17 @@ class RotatingEarth(ThreeDScene):
         # Rotate Earth
         # --------------------------------------------------------
 
-        self.add_fixed_in_frame_mobjects(*text_before_means)
+        #self.add_fixed_in_frame_mobjects(*text_before_means)
         # Screen-space location where you want the globe
-        screen_target = 4.5 * RIGHT + 2.3 * DOWN
+        #screen_target = 4.5 * RIGHT + 2.3 * DOWN
         
         # Convert screen-space direction to 3D world-space direction
-        R = self.camera.get_rotation_matrix()
-        world_target = np.dot(screen_target, R)
+        #R = self.camera.get_rotation_matrix()
+        #world_target = np.dot(screen_target, R)
 
-        globe.add_updater(lambda m,dt : m.rotate(angle = np.pi*dt, axis = np.cos(23.5*DEGREES)*OUT - np.sin(23.5*DEGREES)*UP))
+        globe.add_updater(lambda m,dt : m.rotate(angle = np.pi/2*dt, axis = np.cos(23.5*DEGREES)*OUT - np.sin(23.5*DEGREES)*UP))
+    
+        """
         self.play(
             Succession(
                 LaggedStart(
@@ -419,21 +351,23 @@ class RotatingEarth(ThreeDScene):
 
             run_time=14
         )
+        """
+        self.play(Wait(10))
         globe.clear_updaters()
-        self.wait(2)
         R = self.camera.get_rotation_matrix()
         
         screen_target = 4*LEFT
         world_target = np.dot(screen_target,R)
+        
         self.play(Succession(
-            FadeOut(*text_before_means),
-            globe.animate(run_time = 4).scale(1.75).move_to(world_target)
+            #FadeOut(*text_before_means),
+            globe.animate(run_time = 4).move_to(world_target)
             ))
         
         arrow_to_the_right = Arrow3D(start = LEFT @ R, end = RIGHT @ R)
         self.play(FadeIn(arrow_to_the_right))
         
-        earth_partition = Sphere(center = 3 * RIGHT @ R, radius = 2.5, resolution=(10,10)).rotate(23.5 * DEGREES, axis=RIGHT)
+        earth_partition = Sphere(center = 3 * RIGHT @ R, radius = self.RADIUS, resolution=(10,10)).rotate(23.5 * DEGREES, axis=RIGHT)
         self.play(FadeIn(earth_partition.next_to(arrow_to_the_right, RIGHT @ R)))
         self.play(FadeOut(earth), FadeOut(arrow_to_the_right), earth_partition.animate(run_time = 1).move_to(ORIGIN))
         

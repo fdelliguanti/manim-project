@@ -103,7 +103,7 @@ from PIL import Image
 
 
 class RotatingEarth(ThreeDScene):
-    PRECISION = 0.05
+    PRECISION = 1.0
     EARTH_URL = (
         "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/"
         "Whole_world_-_land_and_oceans.jpg/"

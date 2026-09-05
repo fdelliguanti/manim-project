@@ -442,7 +442,7 @@ class SamplesIntoSphere(ThreeDScene):
 
                 texture_theta %= TAU
 
-                color = BLUE if sample[i,j] == 1 else color_list[i,j]
+                color = RED if sample[i,j] == 1 else color_list[i,j]
 
 
                 # Each Surface represents one small patch
@@ -528,7 +528,8 @@ class SamplesIntoSphere(ThreeDScene):
             
             mask_flattend = samples_inflated[j].flatten()
             for mask_pos, mask_val in enumerate(mask_flattend):
-                earth.submobjects[mask_pos].set_fill(COLOR_LIST_INFLATED.flatten()[mask_pos] if mask_val == 0 else BLUE_E)
+                earth.submobjects[mask_pos].set_fill(COLOR_LIST_INFLATED.flatten()[mask_pos] if mask_val == 0 else RED)
+                earth.submobjects[mask_pos].set_stroke(color=BLACK, width=0 if mask_val == 0 else 0.5)
 
             values[pos] += 1
             new_chart = BarChart(values = values, bar_names=[i for i in range(1,NUM_PATCHES + 1)], y_range = [0, 15, 2], bar_width=1, bar_colors=COLOR_LIST)

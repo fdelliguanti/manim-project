@@ -585,31 +585,55 @@ class WeissmannApproach(ThreeDScene):
         texts.append(Tex(r" $\implies \quad |F(i) - \hat F_L(i) |\leq \epsilon \; \forall i \in\{1,\dots,n\}$").scale(0.8).next_to(texts[-1], DOWN))
         texts.append(Tex(r"$\implies \quad -\epsilon\leq - F(i) + \hat F_L(i) \leq \epsilon \; \forall i \in\{1,\dots,n\}$").scale(0.8).next_to(texts[-1], DOWN))
         texts.append(Tex(r"$\implies \quad F(i)-\epsilon\leq \hat F_L(i) \leq F(i)+\epsilon \; \forall i \in\{1,\dots,n\}$").scale(0.8).next_to(texts[-1], DOWN))
-        texts.append(Tex(r"Note: $L\hat F_L(i) = \sum_{j=1}^L \mathbbm 1_{\{X_j = i\}}$ counts exactly how many samples landed in patch $i$ for every $i\in\{1,\dots,n\}.$", tex_template = myTemplate).scale(0.8).next_to(texts[-1], DOWN))
-        texts.append(Tex(r"Derive: $F(i)-\epsilon \leq \hat F_L(i) = \sum_{j=1}^L \mathbbm 1_{\{X_j = i\}} \;\forall i\in\{1,\dots,n\}$.", tex_template = myTemplate).scale(0.8).next_to(texts[-1], DOWN))
-        texts.append(Tex(r"Since we have an implication chain the last expression holds with at least the same probabilty as the first expression.", tex_template = myTemplate).scale(0.8).next_to(texts[-1], DOWN))
-        texts.append(Tex(r"Wanted: $0.05> 1-(2^n - 2) \exp\left(-\frac{{L\epsilon^2}}{{2}}\right), \quad k=1000$ samples at least.", tex_template = myTemplate).scale(0.8).next_to(texts[-1], DOWN)) 
+        texts.append(Tex(r"Note: $L\hat F_L(i) = \sum_{j=1}^L \mathbbm 1_{\{X_j = i\}}$ counts exactly how many samples landed in patch $i$ for every $i\in\{1,\dots,n\}.$", tex_template = myTemplate, color = YELLOW).scale(0.8).next_to(texts[-1], DOWN))
+        texts.append(SurroundingRectangle(texts[-1], color = YELLOW))
+        texts.append(Tex("Derive: ",
+                         r"$F(i)-\epsilon$", 
+                         r"$\leq \hat F_L(i) = \sum_{j=1}^L \mathbbm 1_{\{X_j = i\}} \;\forall i\in\{1,\dots,n\}$.", 
+                         tex_template = myTemplate)
+                     .scale(0.8).next_to(texts[-1], DOWN))
+        texts.append(Brace(texts[-1][1], direction=DOWN, color = YELLOW, buff = 0))
+        texts.append(Tex(r"Since we have an implication chain the last expression holds with at least the same probabilty as the first expression.", tex_template = myTemplate).scale(0.8).next_to(texts[-2], DOWN))
+        texts.append(Tex(r"Wanted: $0.05> 1-(2^n - 2) \exp\left(-\frac{{L\epsilon^2}}{{2}}\right), \quad k=1000$ samples at least.", tex_template = myTemplate, color = YELLOW).scale(0.8).next_to(texts[-1], DOWN)) 
         for text in texts:
                 self.add_fixed_in_frame_mobjects(text)
-                self.play(Write(text))
+                if isinstance(text, Tex):
+                    self.play(Write(text))
+                    self.play(Wait(1))
+                if isinstance(text, SurroundingRectangle):
+                    self.play(Create(text))
+                    self.play(Wait(1))
+                    self.play(Uncreate(text))
+                if isinstance(text, Brace):
+                    self.play(Create(text))
+                    self.play(Wait(1))
+                  
                 
         self.play(*[FadeOut(text) for text in texts[:-1]], texts[-1].animate.to_edge(UP))
         del texts[:-1]
         
         texts.append(Tex(r"Solution: $L=65926$").scale(0.8).next_to(texts[-1], DOWN))
+        texts.append(SurroundingRectangle(texts[-1], color = RED))
         for text in texts[1:]:
                         self.add_fixed_in_frame_mobjects(text)
-                        self.play(Write(text))
-        self.play(FadeOut(texts[0]), texts[-1].animate.to_edge(UP))
+                        if isinstance(text, Tex):
+                            self.play(Write(text))
+                            self.play(Wait(1))
+                        if isinstance(text, SurroundingRectangle):
+                            self.play(Create(text))
+                            self.play(Wait(1))
+        group = VGroup(*texts[1:])
+        self.play(FadeOut(texts[0]), group.animate.to_edge(UP))
         del texts[:-1]
+        
         ### Simulation for suitable L values, e.g. 10k, 20k, ... 50k
         NUM_PATCHES = 25
         p = [1/NUM_PATCHES for _ in range(NUM_PATCHES)]
         L_SOLUTION = 65926
         X = np.random.multinomial(n=1, pvals = p, size = L_SOLUTION)
         vals = [0 for _ in range(25)]
-        print(f"X.shape: {X.shape}")
-        chart = BarChart(values = vals, bar_colors = [WHITE for _ in range(25)],y_range=[0, 3000, 500], bar_names=[i for i in range(1,26)], bar_width=0.5, x_length = 9).next_to(texts[-1], DOWN)
+
+        chart = BarChart(values = vals, bar_colors = [WHITE for _ in range(25)],y_range=[0, 3000, 500], bar_names=[i for i in range(1,26)], bar_width=0.5, x_length = 9).next_to(texts[0], DOWN)
         self.add_fixed_in_frame_mobjects(chart)
         self.play(Create(chart))
         STEP_SIZE = 1000
@@ -617,6 +641,7 @@ class WeissmannApproach(ThreeDScene):
             vals += x
             if j % STEP_SIZE == 0:
                 new_chart = BarChart(values=vals, bar_colors = [WHITE for _ in range(25)], y_range=[0, 3000, 500],bar_names=[i for i in range(1,26)], bar_width=0.5, x_length = 9)
+                self.add_fixed_in_frame_mobjects(new_chart)
                 self.play(Transform(chart,new_chart, run_time=0.1))
                 self.wait(0.1)
                 
@@ -627,8 +652,9 @@ class WeissmannApproach(ThreeDScene):
         self.play(Write(texts[-1]))
         self.play(Wait(1))
         
-        self.play(Uncreate(chart), Uncreate(new_chart), *[Uncreate(text) for text in texts[-3:]])
+        self.play(*[Uncreate(obj) for obj in self.mobjects if isinstance(obj, VMobject)])
         self.play(Wait(0.5))
+        
     
 class BigSimulationRun(Scene):
     def __init__(self, **kwargs):

@@ -254,7 +254,7 @@ class RotatingEarth(ThreeDScene):
                     ),
                     u_range=[theta_1, theta_2],
                     v_range=[phi_1, phi_2],
-                    resolution=(1, 1),
+                    resolution=(2, 2),
                     fill_color=patch_color,
                     checkerboard_colors=False,
                     fill_opacity=1,

@@ -543,7 +543,7 @@ class SamplesIntoSphere(ThreeDScene):
         texts = []
         
         texts.append(Tex(rf"Sampling $N = {100}$ provides $N_{{\min}} = {np.min(values)}$").scale(0.8).to_edge(UP))
-        texts.append(Tex(r"Question: How many samples $N'$ do you need to sample to have a least number of $k$ samples in every patch with probability at least $p$?").scale(0.8).next_to(texts[-1],DOWN))    
+        texts.append(Tex(r"Question: How many samples $N'\in\mathbb{N}$ do you need to sample to have a least number of $k$ samples in every patch with probability at least $p$ for $p>0$ fixed?", color = YELLOW).scale(0.8).next_to(texts[-1],DOWN))    
         for text in texts:
             self.add_fixed_in_frame_mobjects(text)
             self.play(Write(text))
@@ -560,7 +560,7 @@ class SamplesIntoSphere(ThreeDScene):
     
         self.play(*[FadeOut(text) for text in texts],FadeOut(chart))
         
-class Text(ThreeDScene):
+class WeissmannApproach(ThreeDScene):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
     def construct(self):

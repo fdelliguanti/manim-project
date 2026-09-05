@@ -633,7 +633,7 @@ class WeissmannApproach(ThreeDScene):
         X = np.random.multinomial(n=1, pvals = p, size = L_SOLUTION)
         vals = [0 for _ in range(25)]
 
-        chart = BarChart(values = vals, bar_colors = [WHITE for _ in range(25)],y_range=[0, 3000, 500], bar_names=[i for i in range(1,26)], bar_width=0.5, x_length = 9).next_to(texts[0], DOWN)
+        chart = BarChart(values = vals, bar_colors = [WHITE for _ in range(25)],y_range=[0, 3000, 500], bar_names=[i for i in range(1,26)], bar_width=0.5, x_length = 9)
         self.add_fixed_in_frame_mobjects(chart)
         self.play(Create(chart))
         STEP_SIZE = 1000

@@ -411,13 +411,13 @@ class SamplesIntoSphere(ThreeDScene):
     # Build textured sphere
     # ------------------------------------------------------------
 
-    def create_textured_earth(self, sample = np.array([[1,0,0,0],[0,0,0,0]])):
+    def create_textured_earth(self, sample = np.array([[1,0,0,0],[0,0,0,0]]), color_list = [[GREY_E,GREY_E,GREY_E,GREY_E,GREY_E],[GREY_E,GREY_E,GREY_E,GREY_E,GREY_E]]):
 
         earth = VGroup()
 
-        n_lat = self.LATITUDE_PATCHES
-        n_lon = self.LONGITUDE_PATCHES
-        image_width, image_height = sample.shape
+        n_lat = sample.shape[0]
+        n_lon = sample.shape[1]
+
         print(sample.shape)
         for i in range(n_lat):
             # Polar coordinate limits
@@ -442,7 +442,7 @@ class SamplesIntoSphere(ThreeDScene):
 
                 texture_theta %= TAU
 
-                color = BLUE if sample[i,j] == 1 else GREY_E
+                color = BLUE if sample[i,j] == 1 else color_list[i,j]
 
 
                 # Each Surface represents one small patch
@@ -455,7 +455,7 @@ class SamplesIntoSphere(ThreeDScene):
                     ),
                     u_range=[theta_1, theta_2],
                     v_range=[phi_1, phi_2],
-                    resolution=(1, 1),
+                    resolution=(2, 2),
                     fill_color=color,
                     checkerboard_colors=False,
                     fill_opacity=1,
@@ -486,10 +486,21 @@ class SamplesIntoSphere(ThreeDScene):
         # --------------------------------------------------------
         # Earth
         # --------------------------------------------------------
-        sample_init = np.random.multinomial(n=1, pvals=[1/25 for i in range(25)])
-        sample_init = sample_init.reshape((5,5))
+        NUM_PATCHES = 25
+        sample_init = np.random.multinomial(n=1, pvals=[1/NUM_PATCHES for i in range(NUM_PATCHES)])
+        sample_init = sample_init.reshape((self.LATITUDE_PATCHES,self.LONGITUDE_PATCHES))
         
-        earth = self.create_textured_earth(sample = sample_init)
+        sample_init_inflated = sample_init.repeat(3, axis=0).repeat(3, axis=1) 
+        
+        np.random.seed(2026)
+        red_gnr = np.random.choice(range(100,200), size = NUM_PATCHES, replace = False)
+        green_gnr = np.random.choice(range(100,200), size = NUM_PATCHES, replace = False)
+        blue_gnr = np.random.choice(range(100,200), size = NUM_PATCHES, replace = False)
+        hex_colors = zip(red_gnr, green_gnr, blue_gnr)
+        
+        COLOR_LIST = [f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}" for color in hex_colors]
+        COLOR_LIST_INFLATED = np.array(COLOR_LIST).reshape((self.LATITUDE_PATCHES,self.LONGITUDE_PATCHES)).repeat(3, axis=0).repeat(3, axis=1)
+        earth = self.create_textured_earth(sample = sample_init_inflated, color_list = COLOR_LIST_INFLATED)
 
         # Slight tilt of Earth's rotation axis.
         
@@ -498,34 +509,35 @@ class SamplesIntoSphere(ThreeDScene):
             axis=RIGHT,
         )
         self.play(FadeIn(earth))
-        print(type(np.where(sample_init.flatten()==1)[0]))
+    
         flat_pos_init = np.where(sample_init.flatten()==1)[0][0]
         
 
-        samples = np.random.multinomial(n=1, pvals=[1/25 for _ in range(25)], size = 100)
+        samples = np.random.multinomial(n=1, pvals=[1/NUM_PATCHES for _ in range(NUM_PATCHES)], size = 10)
         samples = np.array([sample.reshape((5,5)) for sample in samples])
+        samples_inflated = np.array([sample.reshape((5,5)).repeat(3, axis=0).repeat(3, axis=1) for sample in samples])
         flat_positions = [np.where(sample.flatten()==1)[0][0] for sample in samples]
         previous_pos = flat_pos_init
-        values = [0 for _ in range(25)]
+        values = [0 for _ in range(NUM_PATCHES)]
         values[flat_pos_init] += 1
-        chart = BarChart(values = values, bar_names=[i for i in range(25)], y_range = [0, 15, 2], bar_width=1, bar_colors=[WHITE for _ in range(25)])
+        chart = BarChart(values = values, bar_names=[i for i in range(1,NUM_PATCHES + 1)], y_range = [0, 15, 2], bar_width=1, bar_colors=COLOR_LIST)
         self.add_fixed_in_frame_mobjects(chart)
         self.play(Create(chart))
-        for pos in flat_positions:
-            if pos != previous_pos:
-                earth.submobjects[previous_pos].set_fill(GREY_E)
-                earth.submobjects[pos].set_fill(BLUE)
-                values[pos] += 1
-                new_chart = BarChart(values = values, bar_names=[i for i in range(25)], y_range = [0, 15, 2], bar_width=1, bar_colors=[WHITE for _ in range(25)])
-                self.add_fixed_in_frame_mobjects(new_chart)
-                self.play(Transform(chart,new_chart), run_time = 0.1)
-                chart = new_chart
-                self.wait(0.1)
-                
-            else:
-                self.wait(0.1)
+        
+        for j, pos in enumerate(flat_positions):
+            
+            mask_flattend = samples_inflated[j].flatten()
+            for mask_pos, mask_val in enumerate(mask_flattend):
+                earth.submobjects[mask_pos].set_fill(COLOR_LIST_INFLATED.flatten()[mask_pos] if mask_val == 0 else BLUE_E)
 
-            previous_pos = pos
+            values[pos] += 1
+            new_chart = BarChart(values = values, bar_names=[i for i in range(1,NUM_PATCHES + 1)], y_range = [0, 15, 2], bar_width=1, bar_colors=COLOR_LIST)
+            self.add_fixed_in_frame_mobjects(new_chart)
+            self.play(Transform(chart,new_chart), run_time = 0.1)
+            #chart = new_chart
+            self.wait(0.1)
+                
+        
         self.play(FadeOut(earth))
         texts = []
         
@@ -535,6 +547,16 @@ class SamplesIntoSphere(ThreeDScene):
             self.add_fixed_in_frame_mobjects(text)
             self.play(Write(text))
         
+        
+        min_val = np.min(values)
+        min_indeces = np.where(np.array(values) == min_val)[0]
+        rects = [SurroundingRectangle(new_chart.x_axis.labels[min_index], color = YELLOW) for min_index in min_indeces]
+        for rect in rects:
+            self.add_fixed_in_frame_mobjects(rect)
+        
+        self.play(*[Create(rect) for rect in rects],*[new_chart.bars[min_index].animate.set_color(YELLOW) for min_index in min_indeces], run_time = 0.5)
+        
+    
         self.play(*[FadeOut(text) for text in texts],FadeOut(chart))
         
 class Text(ThreeDScene):

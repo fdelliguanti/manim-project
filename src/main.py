@@ -498,7 +498,7 @@ class SamplesIntoSphere(ThreeDScene):
         blue_gnr = np.random.choice(range(100,200), size = NUM_PATCHES, replace = False)
         hex_colors = zip(red_gnr, green_gnr, blue_gnr)
         
-        COLOR_LIST = [f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}" for color in hex_colors]
+        COLOR_LIST = [f"#{color[0]:02x}{color[0]:02x}{color[0]:02x}" for color in hex_colors]
         COLOR_LIST_INFLATED = np.array(COLOR_LIST).reshape((self.LATITUDE_PATCHES,self.LONGITUDE_PATCHES)).repeat(3, axis=0).repeat(3, axis=1)
         earth = self.create_textured_earth(sample = sample_init_inflated, color_list = COLOR_LIST_INFLATED)
 
@@ -529,7 +529,7 @@ class SamplesIntoSphere(ThreeDScene):
             mask_flattend = samples_inflated[j].flatten()
             for mask_pos, mask_val in enumerate(mask_flattend):
                 earth.submobjects[mask_pos].set_fill(COLOR_LIST_INFLATED.flatten()[mask_pos] if mask_val == 0 else RED)
-                earth.submobjects[mask_pos].set_stroke(color=BLACK, width=0 if mask_val == 0 else 0.5)
+                #earth.submobjects[mask_pos].set_stroke(color=BLACK, width=0 if mask_val == 0 else 0.5)
 
             values[pos] += 1
             new_chart = BarChart(values = values, bar_names=[i for i in range(1,NUM_PATCHES + 1)], y_range = [0, 15, 2], bar_width=1, bar_colors=COLOR_LIST)

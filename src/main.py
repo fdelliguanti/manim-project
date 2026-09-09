@@ -710,7 +710,6 @@ class BigSimulationRun(Scene):
         self.add(axes)
         X_JITTER = np.random.standard_normal(1000)/10
         dots = []
-        MY_COLORS = [YELLOW, BLUE_B, BLUE_C, BLUE_D, BLUE_E, PURPLE_E, PURPLE_D, PURPLE_C, PURPLE_B, PURPLE_A]
         for j,L in enumerate(L_VALUES):
             X = np.random.multinomial(n=L, pvals = p, size = SIM_SIZE)
             
@@ -729,7 +728,6 @@ class BinomialApproach(Scene):
     
     def construct(self):
         texts = []
-        texts.append(Tex(r"Assume you know the patch $j_0\in\{1,\dots,n\}$ with the least probabilty $p_{\min} =p_{j_0}$.").scale(0.8).to_edge(UP))
         NUM_RECTANGLES = 4
         colors = [BLUE_A, BLUE_B, BLUE_C, BLUE_D, BLUE_E] 
         rects = []
@@ -746,26 +744,32 @@ class BinomialApproach(Scene):
         group = VGroup(rects[1:]).arrange(RIGHT)
         vgroup = VGroup(rects[0],group).arrange(RIGHT)
         self.play(Create(vgroup, run_time = 2))
-        self.play(Write(texts[0]),Create(SurroundingRectangle(rects[0])))
+        self.play(Create(SurroundingRectangle(rects[0])))
         self.play(Wait(1))
+        
         self.play(Create(SurroundingRectangle(group, color=RED)))
+        
         NUM_PATCHES = 25
+       
         probabilities = [1/NUM_PATCHES for _ in range(NUM_RECTANGLES)]
         for j,p in enumerate(probabilities):
             if j <= NUM_RECTANGLES-2:
                 self.play(Write(MathTex(f"p_{j+1} = {p}").scale(0.8).move_to(rects[j].get_center())))
             if j==NUM_RECTANGLES-1:
                 self.play(Write(MathTex(f"p_{{{NUM_PATCHES}}} = {p}").scale(0.8).move_to(rects[NUM_RECTANGLES].get_center())))
-
+        prob_1 = MathTex(r"p = 0.04", color = YELLOW).scale(0.8).next_to(rects[0].get_top(), UP)
+        prob_2 = MathTex(r"q = 1-p = 0.96", color = RED).scale(0.8).next_to(group.get_top(), UP)
+        self.play(Create(prob_1), Create(prob_2))
+        
         del texts
         
         texts = []
         texts.append(Tex("Density function of Binomial distribution:").scale(0.8).next_to(vgroup, DOWN))
-        texts.append(MathTex(r"f(k) = \binom{n}{k} p^{k} (1-p)^{n-k} = \binom{n}{k} 0.04^{k} 0.96^{n-k}").scale(0.8).next_to(texts[-1],DOWN))
+        texts.append(MathTex(r"\mathbb P(N_1=k)=f(k) = \binom{n}{k} p^{k} (1-p)^{n-k} = \binom{n}{k} 0.04^{k} 0.96^{n-k}").scale(0.8).next_to(texts[-1],DOWN))
         
         for t in texts:
             self.play(Write(t))
-            
+        self.play(Wait(1))
         self.play(*[Uncreate(obj) for obj in self.mobjects if isinstance(obj, VMobject)])
         self.play(Wait(1))
         
@@ -774,7 +778,7 @@ class BinomialApproach(Scene):
         
         texts = []
         texts.append(Tex("Cumulative Density Function of the Binomial distribution:").scale(0.8).to_edge(UP))
-        texts.append(MathTex(r"F(k;n) = \sum_{j=0}^k \binom{n}{j}0.04^{j} 0.96^{n-j}").scale(0.8).next_to(texts[-1], DOWN))
+        texts.append(MathTex(r"\mathbb P(N_1\leq k) = F(k;n) = \sum_{j=0}^k \binom{n}{j}0.04^{j} 0.96^{n-j}").scale(0.8).next_to(texts[-1], DOWN))
         texts.append(Tex(r"WANTED: Smallest $n\geq 1000$ such that $F(999;n)\leq 0.002$", color = YELLOW).scale(0.8).next_to(texts[-1], DOWN))
         
         for t in texts:
@@ -785,11 +789,11 @@ class BinomialApproach(Scene):
         L_VALUES = range(10000,40000,STEP_SIZE)
         
         dots = []
-        axes = Axes(x_length=6, y_length = 4, x_range = [L_VALUES[0], L_VALUES[-1], 1000], y_range = [0, 1, 0.1], tips = False, y_axis_config = {"include_numbers": True, "font_size": 20}, x_axis_config={"include_numbers": True, "font_size": 20}).next_to(texts[-1], DOWN)
+        axes = Axes(x_length=6, y_length = 4, x_range = [L_VALUES[0], L_VALUES[-1], 5000], y_range = [0, 1, 0.1], tips = False, y_axis_config = {"include_numbers": True, "font_size": 20}, x_axis_config={"include_numbers": True, "font_size": 20}).next_to(texts[-1], DOWN)
         for e in axes.x_axis.numbers:
             e.rotate(45 * DEGREES)
             
-        self.play(Create(axes),Create(axes.get_x_axis_label(Tex("n").scale(0.5))), Create(axes.get_y_axis_label(Tex("CDF").scale(0.5))))
+        self.play(Create(axes),Create(axes.get_x_axis_label(Tex("n").scale(0.5))), Create(axes.get_y_axis_label(MathTex("F(999;n)").scale(0.5))))
         values = []
         for L in L_VALUES:
             cum_prob = stats.binom.cdf(999,L,0.04)
@@ -819,22 +823,34 @@ class BinomialApproach(Scene):
         self.play(*[Create(text) for text in texts])
         
         NUM_PATCHES = 25
-        SIM_SIZE = 200
+        SIM_SIZE = 100
         probabilities = [1/NUM_PATCHES for _ in range(NUM_PATCHES)]
         
         X = np.random.multinomial(n=L_SOLUTION, pvals = probabilities, size = SIM_SIZE)
-        print(f"X.shape: {X.shape}")
+        
         minima = np.min(X, axis = 1)
-        print(f"minimum.shape: {minima.shape}")
+        
         
         percentage_minima_higher_thr = np.mean(minima>=1000)
-        print(f"percentage_minima_higher_thr = {percentage_minima_higher_thr}")
+        
         axes = Axes(x_length=6, y_length = 4, x_range = [1, SIM_SIZE, SIM_SIZE//10], y_range = [950, 1150, 50], tips = False, y_axis_config = {"include_numbers": True, "font_size": 20}, x_axis_config={"include_numbers": False, "font_size": 20}).next_to(texts[-1], DOWN)
         self.play(Create(axes))
+        
+        horizontal_line = axes.get_horizontal_line(axes.c2p(SIM_SIZE,1000), color = YELLOW)
+        self.play(Create(horizontal_line))
+        
+        counter = DecimalNumber(0, color=YELLOW, num_decimal_places=0).scale(0.8).next_to(axes, 2*RIGHT)
+        value_tracker = ValueTracker(0)
+        counter.add_updater(lambda d: d.set_value(value_tracker.get_value()))
+        self.add(counter)
+        
         for j,m in enumerate(minima):
-            dot = Dot(axes.c2p(j+1,m))
+            dot = Dot(axes.c2p(j+1,m), color = WHITE if m>=1000 else RED).scale(0.5)
             self.play(Create(dot, run_time = 0.1))
+            if m>=1000:
+                self.play(value_tracker.animate(run_time = 0.1).set_value(value_tracker.get_value() + 1))
         self.play(Wait(1))
+
 class BinomialApproachExplanation(Scene):
     def __init__(self,**kwargs):
         super().__init__(**kwargs)

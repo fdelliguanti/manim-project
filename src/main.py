@@ -677,7 +677,7 @@ class BigSimulationRun(Scene):
         for j,e in enumerate(minima):
             dot = Dot(axes.c2p(j,e))
             dots.append(dot)
-            self.add(dot)
+            self.play(Create(dot, run_time = 0.01))
         self.play(Wait(1))
         self.play(Uncreate(axes), [Uncreate(dot) for dot in dots])
         self.play(Wait(1))
@@ -716,7 +716,7 @@ class BigSimulationRun(Scene):
             
             minima = np.min(X, axis = 1)
             for k,m in enumerate(minima):
-                dot = Dot(axes.c2p(1+ j + X_JITTER[j + k], m), color=MY_COLORS[j])
+                dot = Dot(axes.c2p(1+ j + X_JITTER[j + k], m), color=YELLOW if j == 0 else WHITE)
                 dots.append(dot)
                 self.play(Create(dot, run_time = 0.01))
                 

@@ -6,6 +6,12 @@ from scipy import stats
 
 
 from manim import *
+from pydub import AudioSegment
+
+
+def audio_duration(filename):
+    audio = AudioSegment.from_file(filename)
+    return len(audio) / 1000
 
 def vec_to_tex_str(vec = [1,2,3], name="X", num_decimal = 2):
     """
@@ -103,7 +109,7 @@ from PIL import Image
 
 
 class RotatingEarth(ThreeDScene):
-    PRECISION = 1.0
+    PRECISION = 0.1
     EARTH_URL = (
         "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/"
         "Whole_world_-_land_and_oceans.jpg/"
@@ -309,7 +315,8 @@ class RotatingEarth(ThreeDScene):
         # --------------------------------------------------------
         #title = Tex(r"Imagine your aim it to study climate on earth. E.g. for the climate change").scale(0.75).to_edge(UP)
         #self.add_fixed_in_frame_mobjects(title)
-        self.play(Wait(1))
+        self.add_sound("media/audio/Voice_Rotating_Earth_2.mp3")
+        self.play(Wait(7))
         #text_before_means = []
         #text_before_means.append(Tex(r"Quantities like temperature, pressure and humidity are not only measured by fixed placed weather stations. But moving devices like wether balloons, air crafts and ships collect also data.").scale(0.75).next_to(title, DOWN, buff = 0.5))
         #text_before_means.append(Tex(r"Problem: In a time window, e.g. one month, moving devices do not necessarily cover in a every regions of the earth uniformly.").scale(0.75).next_to(text_before_means[-1],DOWN, buff = 0.2))
@@ -352,7 +359,7 @@ class RotatingEarth(ThreeDScene):
             run_time=14
         )
         """
-        self.play(Wait(10))
+        self.play(Wait(18))
         globe.clear_updaters()
         R = self.camera.get_rotation_matrix()
         
@@ -442,7 +449,7 @@ class SamplesIntoSphere(ThreeDScene):
 
                 texture_theta %= TAU
 
-                color = RED if sample[i,j] == 1 else color_list[i,j]
+                color = BLUE if sample[i,j] == 1 else color_list[i,j]
 
 
                 # Each Surface represents one small patch
@@ -512,37 +519,39 @@ class SamplesIntoSphere(ThreeDScene):
     
         flat_pos_init = np.where(sample_init.flatten()==1)[0][0]
         
-
-        samples = np.random.multinomial(n=1, pvals=[1/NUM_PATCHES for _ in range(NUM_PATCHES)], size = 10)
+        NUM_SAMPLES = 1000
+        samples = np.random.multinomial(n=1, pvals=[1/NUM_PATCHES for _ in range(NUM_PATCHES)], size = NUM_SAMPLES)
         samples = np.array([sample.reshape((5,5)) for sample in samples])
         samples_inflated = np.array([sample.reshape((5,5)).repeat(3, axis=0).repeat(3, axis=1) for sample in samples])
         flat_positions = [np.where(sample.flatten()==1)[0][0] for sample in samples]
         previous_pos = flat_pos_init
         values = [0 for _ in range(NUM_PATCHES)]
         values[flat_pos_init] += 1
-        chart = BarChart(values = values, bar_names=[i for i in range(1,NUM_PATCHES + 1)], y_range = [0, 15, 2], bar_width=1, bar_colors=COLOR_LIST)
+     
+        chart = BarChart(values = values, bar_names=[i for i in range(1,NUM_PATCHES + 1)], y_range = [0,200 , 200//5], bar_width=1, bar_colors=[WHITE for _ in range(NUM_PATCHES)]).to_edge(DOWN)
         self.add_fixed_in_frame_mobjects(chart)
-        self.play(Create(chart))
         
         for j, pos in enumerate(flat_positions):
-            
-            mask_flattend = samples_inflated[j].flatten()
-            for mask_pos, mask_val in enumerate(mask_flattend):
-                earth.submobjects[mask_pos].set_fill(COLOR_LIST_INFLATED.flatten()[mask_pos] if mask_val == 0 else RED)
-                #earth.submobjects[mask_pos].set_stroke(color=BLACK, width=0 if mask_val == 0 else 0.5)
-
             values[pos] += 1
-            new_chart = BarChart(values = values, bar_names=[i for i in range(1,NUM_PATCHES + 1)], y_range = [0, 15, 2], bar_width=1, bar_colors=COLOR_LIST)
-            self.add_fixed_in_frame_mobjects(new_chart)
-            self.play(Transform(chart,new_chart), run_time = 0.1)
-            #chart = new_chart
-            self.wait(0.1)
+            if j < 10 or j > len(flat_positions) - 10:
+                mask_flattend = samples_inflated[j].flatten()
+                for mask_pos, mask_val in enumerate(mask_flattend):
+                    earth.submobjects[mask_pos].set_fill(COLOR_LIST_INFLATED.flatten()[mask_pos] if mask_val == 0 else BLUE)
+                    #earth.submobjects[mask_pos].set_stroke(color=BLACK, width=0 if mask_val == 0 else 0.5)
+
+                
+                #self.play(chart.animate.change_bar_values(values), run_time=1 if j < 5 else 5)
+                new_chart = BarChart(values = values, bar_names=[i for i in range(1,NUM_PATCHES + 1)], y_range = [0, np.max([np.max(values), 15]), np.max([np.max(values), 15])//5], bar_width=1, bar_colors=[WHITE for _ in range(NUM_PATCHES)]).to_edge(DOWN)
+                self.play(Transform(chart,new_chart), run_time = 1 if j<5 else 5)
+                #new_chart.set_opacity(0)
+                #self.remove(chart)
+                #chart = new_chart 
                 
         
         self.play(FadeOut(earth))
         texts = []
         
-        texts.append(Tex(rf"Sampling $N = {100}$ provides $N_{{\min}} = {np.min(values)}$").scale(0.8).to_edge(UP))
+        texts.append(Tex(rf"Sampling $N = {NUM_SAMPLES}$ provides $N_{{\min}} = {np.min(values)}$").scale(0.8).to_edge(UP))
         texts.append(Tex(r"Question: How many samples $N'\in\mathbb{N}$ do you need to sample to have a least number of $k$ samples in every patch with probability at least $p$ for $p>0$ fixed?", color = YELLOW).scale(0.8).next_to(texts[-1],DOWN))    
         for text in texts:
             self.add_fixed_in_frame_mobjects(text)
@@ -551,11 +560,11 @@ class SamplesIntoSphere(ThreeDScene):
         
         min_val = np.min(values)
         min_indeces = np.where(np.array(values) == min_val)[0]
-        rects = [SurroundingRectangle(new_chart.x_axis.labels[min_index], color = YELLOW) for min_index in min_indeces]
+        rects = [SurroundingRectangle(chart.x_axis.labels[min_index], color = YELLOW) for min_index in min_indeces]
         for rect in rects:
             self.add_fixed_in_frame_mobjects(rect)
         
-        self.play(*[Create(rect) for rect in rects],*[new_chart.bars[min_index].animate.set_color(YELLOW) for min_index in min_indeces], run_time = 0.5)
+        self.play(*[Create(rect) for rect in rects],*[chart.bars[min_index].animate.set_color(YELLOW) for min_index in min_indeces], run_time = 0.5)
         
     
         self.play(*[FadeOut(text) for text in texts],FadeOut(chart))

@@ -686,7 +686,15 @@ class BigSimulationRun(Scene):
         for j,e in enumerate(minima):
             dot = Dot(axes.c2p(j,e))
             dots.append(dot)
-            self.play(Create(dot, run_time = 0.01))
+        
+        self.play(Succession(
+            *[Create(dot, run_time = 0.1) for dot in dots[:100]], lag_ratio=1.0
+        )) 
+        
+        
+        self.play(Succession(
+                    *[Create(dot, run_time = 0.1) for dot in dots[100:]], lag_ratio=0.1
+                )) 
         self.play(Wait(1))
         self.play(Uncreate(axes), [Uncreate(dot) for dot in dots])
         self.play(Wait(1))

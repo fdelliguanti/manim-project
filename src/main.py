@@ -840,7 +840,7 @@ class BinomialApproach(Scene):
         self.play(*[Create(text) for text in texts])
         
         NUM_PATCHES = 25
-        SIM_SIZE = 100
+        SIM_SIZE = 1000
         probabilities = [1/NUM_PATCHES for _ in range(NUM_PATCHES)]
         
         X = np.random.multinomial(n=L_SOLUTION, pvals = probabilities, size = SIM_SIZE)
@@ -861,11 +861,23 @@ class BinomialApproach(Scene):
         counter.add_updater(lambda d: d.set_value(value_tracker.get_value()))
         self.add(counter)
         
+        dots = []
         for j,m in enumerate(minima):
             dot = Dot(axes.c2p(j+1,m), color = WHITE if m>=1000 else RED).scale(0.5)
-            self.play(Create(dot, run_time = 0.1))
-            if m>=1000:
-                self.play(value_tracker.animate(run_time = 0.1).set_value(value_tracker.get_value() + 1))
+            dots.append(dot)
+            
+        self.play(Succession(
+            *[ 
+              AnimationGroup(animation) for j,dot in enumerate(dots[:10]) for animation in (Create(dot, run_time = 0.2), value_tracker.animate(run_time = 0.01).set_value(j+1))
+            ],
+            lag_ratio=1
+        ))
+        self.play(Succession(
+                    *[ 
+                      AnimationGroup(animation) for j,dot in enumerate(dots[10:], start=10) for animation in (Create(dot, run_time = 0.2), value_tracker.animate(run_time = 0.01).set_value(j+1))
+                    ],
+                    lag_ratio=0.01
+                ))
         self.play(Wait(1))
 
 class BinomialApproachExplanation(Scene):

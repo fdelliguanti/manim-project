@@ -675,10 +675,10 @@ class BigSimulationRun(Scene):
         L_SOLUTION = 65926
         SIM_SIZE = 1000
         X = np.random.multinomial(n=L_SOLUTION, pvals = p, size = SIM_SIZE)
-        print(f"X.shape: {X.shape}")
+        #print(f"X.shape: {X.shape}")
         minima = np.min(X, axis = 1)
-        print(f"minima.shape = {minima.shape}, minima[:5] = {minima[:5]}")
-        print(f"P (N_min>=1000) = {np.mean(minima>1000)}")
+        #print(f"minima.shape = {minima.shape}, minima[:5] = {minima[:5]}")
+        #print(f"P (N_min>=1000) = {np.mean(minima>1000)}")
         
         axes = Axes(x_range = [1, SIM_SIZE], y_range = [2000,3000,100], x_axis_config={"include_numbers": False, "include_ticks":False}, y_axis_config={"include_numbers": True, "include_ticks":True})
         self.add(axes)
@@ -700,16 +700,17 @@ class BigSimulationRun(Scene):
         self.play(Wait(1))
         
         texts = []
-        texts.append(Tex("Every simulation yields that the least sample number is at least 1000. Even larger than 2000.").scale(0.8).to_edge(UP))
-        texts.append(Tex(f"Question: Can we chose a $L$ that is lower than theoretical value $L={L_SOLUTION}$?", color = YELLOW).scale(0.8).next_to(texts[-1], DOWN))
+        #texts.append(Tex("Every simulation yields that the least sample number is at least 1000. Even larger than 2000.").scale(0.8).to_edge(UP))
+        texts.append(Tex(f"Question: Can we chose a $L$ that is lower than theoretical value $L={L_SOLUTION}$?", color = YELLOW).scale(0.8).to_edge(UP))
         
         for text in texts:
             self.play(Write(text))
+        self.wait(1)
         
         L_VALUES = [L_SOLUTION, 50000, 40000, 30000, 20000, 10000, 5000, 2000, 1000, 500]
         
         SIM_SIZE = 5
-        axes = Axes(x_range = [0, len(L_VALUES)+1],y_length=4, y_range = [0, 3000, 500], x_axis_config={"include_numbers": False, "include_ticks":True}, y_axis_config={"include_numbers": True, "include_ticks":True})
+        axes = Axes(x_range = [0, len(L_VALUES)+1],y_length=4, y_range = [0, 3000, 500], tips = False, x_axis_config={"include_numbers": False, "include_ticks":True}, y_axis_config={"include_numbers": True, "include_ticks":True})
         label = axes.get_x_axis_label(label="L")
         self.add(label)
         axes.add_coordinates({
@@ -737,6 +738,9 @@ class BigSimulationRun(Scene):
                 self.play(Create(dot, run_time = 0.01))
                 
         self.play(Wait(1))
+        horizontal_line = axes.get_horizontal_line(axes.c2p(len(L_VALUES),1000), color = RED)
+        self.play(Create(horizontal_line))
+        self.wait(1)
         self.play(Create(SurroundingRectangle(axes.x_axis.labels[3])))
 
 class BinomialApproach(Scene):
@@ -911,7 +915,8 @@ class BinomialApproachExplanation(Scene):
         texts.append(Tex(r"Requiring $25 q_n - 24\geq 0.95$ yields as desired $\mathbb P(N_{{\min}}) \geq 0.95$. ").scale(0.8).next_to(texts[-1], DOWN))
 
         self.play(*[Uncreate(obj) for obj in self.mobjects if isinstance(obj,VMobject) ])
-        self.play(Succession(*[Write(text) for text in texts]))
+        [self.play(animation) for text in texts for animation in [Write(text),Wait(1)] ]
+        #self.play(Succession(*[AnimationGroup(Write(text),Wait(1)) for text in texts]))
         del texts
         texts = []
         texts.append(Tex(r"It holds: $25 q_n - 24\geq 0.95 \; \iff \; q_n\geq \frac{{24.95}}{{25}} = 0.998$").scale(0.8).to_edge(UP))

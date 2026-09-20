@@ -866,15 +866,16 @@ class BinomialApproach(Scene):
             dot = Dot(axes.c2p(j+1,m), color = WHITE if m>=1000 else RED).scale(0.5)
             dots.append(dot)
             
+        START_ACCELERATED_SUCCESSION = 20
         self.play(Succession(
             *[ 
-              AnimationGroup(animation) for j,dot in enumerate(dots[:10]) for animation in (Create(dot, run_time = 0.2), value_tracker.animate(run_time = 0.01).set_value(j+1))
+              AnimationGroup(animation) for j,dot in enumerate(dots[:START_ACCELERATED_SUCCESSION]) for animation in (Create(dot, run_time = 0.2), value_tracker.animate(run_time = 0.01).set_value(j+1))
             ],
             lag_ratio=1
         ))
         self.play(Succession(
                     *[ 
-                      AnimationGroup(animation) for j,dot in enumerate(dots[10:], start=10) for animation in (Create(dot, run_time = 0.2), value_tracker.animate(run_time = 0.01).set_value(j+1))
+                      AnimationGroup(animation) for j,dot in enumerate(dots[START_ACCELERATED_SUCCESSION:], start=START_ACCELERATED_SUCCESSION) for animation in (Create(dot, run_time = 0.2), value_tracker.animate(run_time = 0.01).set_value(j+1))
                     ],
                     lag_ratio=0.01
                 ))

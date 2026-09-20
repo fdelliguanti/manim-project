@@ -315,7 +315,7 @@ class RotatingEarth(ThreeDScene):
         # --------------------------------------------------------
         #title = Tex(r"Imagine your aim it to study climate on earth. E.g. for the climate change").scale(0.75).to_edge(UP)
         #self.add_fixed_in_frame_mobjects(title)
-        self.add_sound("media/audio/Voice_Rotating_Earth_2.mp3")
+        self.add_sound("media/audio/voice_RotatingEarth.mp3")
         self.play(Wait(7))
         #text_before_means = []
         #text_before_means.append(Tex(r"Quantities like temperature, pressure and humidity are not only measured by fixed placed weather stations. But moving devices like wether balloons, air crafts and ships collect also data.").scale(0.75).next_to(title, DOWN, buff = 0.5))
@@ -359,7 +359,7 @@ class RotatingEarth(ThreeDScene):
             run_time=14
         )
         """
-        self.play(Wait(18))
+        self.play(Wait(13))
         globe.clear_updaters()
         R = self.camera.get_rotation_matrix()
         
@@ -515,8 +515,9 @@ class SamplesIntoSphere(ThreeDScene):
             23.5 * DEGREES,
             axis=RIGHT,
         )
+        self.add_sound("media/audio/voice_SamplesIntoSphere.mp3")
         self.play(FadeIn(earth))
-    
+        self.wait(5)
         flat_pos_init = np.where(sample_init.flatten()==1)[0][0]
         
         NUM_SAMPLES = 1000
@@ -528,7 +529,7 @@ class SamplesIntoSphere(ThreeDScene):
         values = [0 for _ in range(NUM_PATCHES)]
         values[flat_pos_init] += 1
      
-        chart = BarChart(values = values, bar_names=[i for i in range(1,NUM_PATCHES + 1)], y_range = [0,200 , 200//5], bar_width=1, bar_colors=[WHITE for _ in range(NUM_PATCHES)]).to_edge(DOWN)
+        chart = BarChart(values = values, bar_names=[i for i in range(1,NUM_PATCHES + 1)], y_range = [0, 50, 10], bar_width=1, bar_colors=[WHITE for _ in range(NUM_PATCHES)]).to_edge(DOWN)
         self.add_fixed_in_frame_mobjects(chart)
         
         for j, pos in enumerate(flat_positions):
@@ -541,8 +542,8 @@ class SamplesIntoSphere(ThreeDScene):
 
                 
                 #self.play(chart.animate.change_bar_values(values), run_time=1 if j < 5 else 5)
-                new_chart = BarChart(values = values, bar_names=[i for i in range(1,NUM_PATCHES + 1)], y_range = [0, np.max([np.max(values), 15]), np.max([np.max(values), 15])//5], bar_width=1, bar_colors=[WHITE for _ in range(NUM_PATCHES)]).to_edge(DOWN)
-                self.play(Transform(chart,new_chart), run_time = 1 if j<5 else 5)
+                new_chart = BarChart(values = values, bar_names=[i for i in range(1,NUM_PATCHES + 1)], y_range = [0, 50, 10], bar_width=1, bar_colors=[WHITE for _ in range(NUM_PATCHES)]).to_edge(DOWN)
+                self.play(Transform(chart,new_chart), run_time = 0.4)
                 #new_chart.set_opacity(0)
                 #self.remove(chart)
                 #chart = new_chart 
@@ -553,21 +554,24 @@ class SamplesIntoSphere(ThreeDScene):
         
         texts.append(Tex(rf"Sampling $N = {NUM_SAMPLES}$ provides $N_{{\min}} = {np.min(values)}$").scale(0.8).to_edge(UP))
         texts.append(Tex(r"Question: How many samples $N'\in\mathbb{N}$ do you need to sample to have a least number of $k$ samples in every patch with probability at least $p$ for $p>0$ fixed?", color = YELLOW).scale(0.8).next_to(texts[-1],DOWN))    
-        for text in texts:
+        for j,text in enumerate(texts):
             self.add_fixed_in_frame_mobjects(text)
             self.play(Write(text))
+            self.wait(1)
+            
+            if j == 0:
+                min_val = np.min(values)
+                min_indeces = np.where(np.array(values) == min_val)[0]
+                rects = [SurroundingRectangle(chart.x_axis.labels[min_index], color = YELLOW) for min_index in min_indeces]
+                for rect in rects:
+                    self.add_fixed_in_frame_mobjects(rect)
+                
+                self.play(*[Create(rect) for rect in rects],*[chart.bars[min_index].animate.set_color(YELLOW) for min_index in min_indeces], run_time = 0.5)
+                self.wait(2)
         
-        
-        min_val = np.min(values)
-        min_indeces = np.where(np.array(values) == min_val)[0]
-        rects = [SurroundingRectangle(chart.x_axis.labels[min_index], color = YELLOW) for min_index in min_indeces]
-        for rect in rects:
-            self.add_fixed_in_frame_mobjects(rect)
-        
-        self.play(*[Create(rect) for rect in rects],*[chart.bars[min_index].animate.set_color(YELLOW) for min_index in min_indeces], run_time = 0.5)
-        
-    
-        self.play(*[FadeOut(text) for text in texts],FadeOut(chart))
+        self.wait(3)
+        self.play(*[Uncreate(obj) for obj in self.mobjects if isinstance(obj,VMobject)])
+        self.wait(1)
         
 class WeissmannApproach(ThreeDScene):
     def __init__(self, **kwargs):
@@ -575,7 +579,7 @@ class WeissmannApproach(ThreeDScene):
     def construct(self):
         myTemplate = TexTemplate()
         myTemplate.add_to_preamble(r"\usepackage{bbm}")
-        
+        self.add_sound("media/audio/voice_WeissmannApproach.mp3")
         texts = []
         texts.append(Tex(r"A result of T. Weissmann et al. (2003) provides the following result.").scale(0.8).to_edge(UP))
         texts.append(Tex(r"$\mathbb P ( \| F - \hat F_L\|_{L_1}\geq \epsilon ) \leq (2^n - 2) \exp\left(-\frac{{L\epsilon^2}}{{2}}\right), \quad \epsilon>0,$").next_to(texts[-1], DOWN))
@@ -651,8 +655,8 @@ class WeissmannApproach(ThreeDScene):
             if j % STEP_SIZE == 0:
                 new_chart = BarChart(values=vals, bar_colors = [WHITE for _ in range(25)], y_range=[0, 3000, 500],bar_names=[i for i in range(1,26)], bar_width=0.5, x_length = 9)
                 self.add_fixed_in_frame_mobjects(new_chart)
-                self.play(Transform(chart,new_chart, run_time=0.1))
-                self.wait(0.1)
+                self.play(Transform(chart,new_chart, run_time=0.05))
+                self.wait(0.05)
                 
         texts.append(Tex(rf"$N_{{\min}} = {np.min(np.sum(X,axis = 0))}$").scale(0.8).next_to(texts[-1], DOWN))
         self.add_fixed_in_frame_mobjects(texts[-1])

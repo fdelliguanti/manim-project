@@ -692,8 +692,12 @@ class BigSimulationRun(Scene):
             dots.append(dot)
         
         self.play(Succession(
-            *[Create(dot, run_time = 0.1) for dot in dots[:100]], lag_ratio=1.0
-        )) 
+                    *[Create(dot, run_time = 0.1) for dot in dots[:50]], lag_ratio=1.0
+                )) 
+        self.add_sound("media/audio/voice_BigSimulationRun.mp3")
+        self.play(Succession(
+                    *[Create(dot, run_time = 0.1) for dot in dots[50:100]], lag_ratio=1.0
+                )) 
         
         
         self.play(Succession(
@@ -768,6 +772,7 @@ class BinomialApproach(Scene):
                 
         group = VGroup(rects[1:]).arrange(RIGHT)
         vgroup = VGroup(rects[0],group).arrange(RIGHT)
+        self.add_sound("media/audio/voice_BinomialApproach.mp3")
         self.play(Create(vgroup, run_time = 2))
         self.play(Create(SurroundingRectangle(rects[0])))
         self.play(Wait(1))
@@ -787,29 +792,31 @@ class BinomialApproach(Scene):
         self.play(Create(prob_1), Create(prob_2))
         
         del texts
-        
+        self.wait(2)
         texts = []
         texts.append(Tex("Density function of Binomial distribution:").scale(0.8).next_to(vgroup, DOWN))
         texts.append(MathTex(r"\mathbb P(N_1=k)=f(k) = \binom{n}{k} p^{k} (1-p)^{n-k} = \binom{n}{k} 0.04^{k} 0.96^{n-k}").scale(0.8).next_to(texts[-1],DOWN))
-        
+        self.wait(2)
         for t in texts:
             self.play(Write(t))
         self.play(Wait(1))
         self.play(*[Uncreate(obj) for obj in self.mobjects if isinstance(obj, VMobject)])
-        self.play(Wait(1))
+        self.play(Wait(2))
         
         # Cumulative Density Function
         del texts
         
         texts = []
-        texts.append(Tex("Cumulative Density Function of the Binomial distribution:").scale(0.8).to_edge(UP))
-        texts.append(MathTex(r"\mathbb P(N_1\leq k) = F(k;n) = \sum_{j=0}^k \binom{n}{j}0.04^{j} 0.96^{n-j}").scale(0.8).next_to(texts[-1], DOWN))
-        texts.append(Tex(r"WANTED: Smallest $n\geq 1000$ such that $F(999;n)\leq 0.002$", color = YELLOW).scale(0.8).next_to(texts[-1], DOWN))
+        texts.append(Tex("Cumulative Distribution Function of the Binomial distribution:").scale(0.8).to_edge(UP))
+        texts.append(MathTex(r"\mathbb P(N_1\leq k) = F(k;L) = \sum_{j=0}^k \binom{L}{j}0.04^{j} 0.96^{L-j}").scale(0.8).next_to(texts[-1], DOWN))
+        texts.append(Tex(r"WANTED: Smallest $L\geq 1000$ such that $F(999;L)\leq 0.002$", color = YELLOW).scale(0.8).next_to(texts[-1], DOWN))
         
-        for t in texts:
+        for j,t in enumerate(texts):
+            if j == 2:
+                self.wait(3)
             self.play(Write(t))
         
-        
+        self.wait(15)
         STEP_SIZE = 1000
         L_VALUES = range(10000,40000,STEP_SIZE)
         
@@ -818,7 +825,7 @@ class BinomialApproach(Scene):
         for e in axes.x_axis.numbers:
             e.rotate(45 * DEGREES)
             
-        self.play(Create(axes),Create(axes.get_x_axis_label(Tex("n").scale(0.5))), Create(axes.get_y_axis_label(MathTex("F(999;n)").scale(0.5))))
+        self.play(Create(axes),Create(axes.get_x_axis_label(Tex("L").scale(0.5))), Create(axes.get_y_axis_label(MathTex("F(999;n)").scale(0.5))))
         values = []
         for L in L_VALUES:
             cum_prob = stats.binom.cdf(999,L,0.04)
@@ -839,12 +846,12 @@ class BinomialApproach(Scene):
         
         self.play(*[Uncreate(obj) for obj in self.mobjects if isinstance(obj, VMobject)])
             
-        self.play(Wait(1))
+        self.wait(4)
         
         texts = []
         L_SOLUTION = L_VALUES[0] + pos_quantile * STEP_SIZE
-        texts.append(Tex(rf"Result: $n = {L_SOLUTION}$ yields that $\mathbb P (N_{{\min}}\geq 1000)\geq 0.95$").scale(0.8).to_edge(UP))
-        texts.append(Tex("Now, let us check, if this result can be observed also by simulations.").scale(0.8).next_to(texts[-1], DOWN))
+        texts.append(Tex(rf"Result: $L = {L_SOLUTION}$ yields that $\mathbb P (N_{{\min}}\geq 1000)\geq 0.95$").scale(0.8).to_edge(UP))
+        #texts.append(Tex("Now, let us check, if this result can be observed also by simulations.").scale(0.8).next_to(texts[-1], DOWN))
         self.play(*[Create(text) for text in texts])
         
         NUM_PATCHES = 25

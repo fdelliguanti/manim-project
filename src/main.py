@@ -900,44 +900,53 @@ class BinomialApproachExplanation(Scene):
     def __init__(self,**kwargs):
         super().__init__(**kwargs)
     def construct(self):
+        self.add_sound("media/audio/voice_BinomialApproachExplanation.mp3")
         texts = []
         texts.append(Tex("Cumulative Density Function of the Binomial distribution:").scale(0.8).to_edge(UP))
-        texts.append(MathTex(r"F(k;n) = \sum_{j=0}^k \binom{n}{j}0.04^{j} 0.96^{n-j}").scale(0.8).next_to(texts[-1], DOWN))
-        self.play(*[Write(text) for text in texts])
+        texts.append(MathTex(r"F(k;L) = \sum_{j=0}^k \binom{L}{j}0.04^{j} 0.96^{L-j}").scale(0.8).next_to(texts[-1], DOWN))
+        [self.play(animation) for text in texts for animation in [Write(text),Wait(5)]]
         
         tex = []
-        tex.append(Tex(r"WANTED: Smallest $n\geq 1000$ such that ", color = YELLOW).scale(0.8))
-        tex.append(MathTex(r"F(999;n)\leq 0.002", color  = YELLOW).scale(0.8).next_to(tex[-1],RIGHT))
+        tex.append(Tex(r"WANTED: Smallest $L\geq 1000$ such that ", color = YELLOW).scale(0.8))
+        tex.append(MathTex(r"F(999;L)\leq 0.002", color  = YELLOW).scale(0.8).next_to(tex[-1],RIGHT))
         group = VGroup(*tex).next_to(texts[-1], DOWN)
         self.play(Write(group))
+        self.wait(5)
         self.play(Create(SurroundingRectangle(tex[-1])))
-        self.play(Wait(1))
+        self.play(Wait(5))
         
         del texts, tex
         texts = []
         texts.append(Tex(r"Final result should be: $\mathbb P(N_{{\min}}\geq 1000)\geq 0.95$").scale(0.8).to_edge(UP))
         texts.append(Tex(r"Observe: $N_{{\min}}\geq 1000 \; \iff \; N_1\geq 1000 \wedge \dots \wedge N_{{25}}\geq 1000$ ").scale(0.8).next_to(texts[-1], DOWN))
         texts.append(Tex(r"$\implies \mathbb P (N_{{\min}}\geq 1000) =\mathbb P( N_1\geq 1000 \wedge \dots \wedge N_{25} \geq 1000)$ ").scale(0.8).next_to(texts[-1], DOWN))
+        
         texts.append(Tex(r"Use: $\mathbb P(A\cup B) = \mathbb P (A) + \mathbb P (B) - \mathbb P(A\cap B) \;\iff\; \mathbb P(A\cap B) = \mathbb P (A) + \mathbb P (B) -\underbrace{\mathbb P(A\cup B)}_{\leq 1}$ ").scale(0.8).next_to(texts[-1], DOWN))
         texts.append(Tex(r"Implies: $\mathbb P(A\cap B) \geq \mathbb P (A) + \mathbb P (B) - 1$ ").scale(0.8).next_to(texts[-1], DOWN))
         texts.append(Tex(r"Implies: $\mathbb P\left(\bigcap_{j=1}^{25} A_j\right) \geq \sum_{j=1}^{25}\mathbb P (A_j) - (25-1)$, where $A_j :=\{X_j\geq 1000\}.$ ").scale(0.8).next_to(texts[-1], DOWN))
-        texts.append(Tex(r"Known: $\mathbb P(A_j) = 1 - F(999;n)=:q_n$ for every $j\in\{1,\dots,25\}$").scale(0.8).next_to(texts[-1], DOWN))
-        texts.append(Tex(r"I.e. $\mathbb P(N_{{\min}}) \geq 25 q_n - 24$. ").scale(0.8).next_to(texts[-1], DOWN))
-        texts.append(Tex(r"Requiring $25 q_n - 24\geq 0.95$ yields as desired $\mathbb P(N_{{\min}}) \geq 0.95$. ").scale(0.8).next_to(texts[-1], DOWN))
+        
+        
+        texts.append(Tex(r"Known: $\mathbb P(A_j) = 1 - F(999;L)=:q_L$ for every $j\in\{1,\dots,25\}$").scale(0.8).next_to(texts[-1], DOWN))
+        texts.append(Tex(r"I.e. $\mathbb P(N_{{\min}}) \geq 25 q_L - 24$. ").scale(0.8).next_to(texts[-1], DOWN))
+        texts.append(Tex(r"Requiring $25 q_L - 24\geq 0.95$ yields as desired $\mathbb P(N_{{\min}}) \geq 0.95$. ").scale(0.8).next_to(texts[-1], DOWN))
 
         self.play(*[Uncreate(obj) for obj in self.mobjects if isinstance(obj,VMobject) ])
-        [self.play(animation) for text in texts for animation in [Write(text),Wait(1)] ]
+        [self.play(animation) for text in texts[:3] for animation in [Write(text),Wait(8)] ]
+        [self.play(animation) for text in texts[3:6] for animation in [Write(text),Wait(4)] ]
+        [self.play(animation) for text in texts[6:] for animation in [Write(text),Wait(4)] ]
+
         #self.play(Succession(*[AnimationGroup(Write(text),Wait(1)) for text in texts]))
         del texts
         texts = []
-        texts.append(Tex(r"It holds: $25 q_n - 24\geq 0.95 \; \iff \; q_n\geq \frac{{24.95}}{{25}} = 0.998$").scale(0.8).to_edge(UP))
-        tex_1 = Tex(r"Find: $n\geq 1000$ such that $q_n = 1-F(999;n)\geq 0.998$, i.e. such that ").scale(0.8)
-        tex_2 = Tex(r"$F(999;n)\leq 0.002.$").next_to(tex_1,RIGHT).scale(0.8)
+        texts.append(Tex(r"It holds: $25 q_L - 24\geq 0.95 \; \iff \; q_L\geq \frac{{24.95}}{{25}} = 0.998$").scale(0.8).to_edge(UP))
+        tex_1 = Tex(r"Find: $L\geq 1000$ such that $q_L = 1-F(999;L)\geq 0.998$, i.e. such that ").scale(0.8)
+        tex_2 = Tex(r"$F(999;L)\leq 0.002.$").next_to(tex_1,RIGHT).scale(0.8)
         
         group = VGroup(tex_1,tex_2).arrange(DOWN).next_to(texts[-1],DOWN)
         self.play(*[Uncreate(obj) for obj in self.mobjects if isinstance(obj,VMobject)])
-        self.play(*[Write(text) for text in texts])
+        [self.play(animation) for text in texts for animation in [Write(text),Wait(5)]]
         self.play(Write(group))
+        self.wait(3)
         self.play(Create(SurroundingRectangle(tex_2)))
         self.play(Wait(1))
 class BallsIntoUrns(Scene):
